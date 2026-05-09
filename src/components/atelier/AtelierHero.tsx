@@ -37,41 +37,28 @@ export function AtelierHero() {
     const showing = hovered || idleKind;
 
     return (
-        <section className="ate-hero">
+        <section className="ate-hero" style={{ overflow: 'visible' }}>
             <div className="ate-hero-grid">
-                <div className="ate-eyebrow">
+                <div className="ate-eyebrow" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     <style>{`
                         @keyframes ate-dot-pop {
-                            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-                            35%      { transform: translate(-50%, -50%) scale(1.9); }
-                            55%      { transform: translate(-50%, -50%) scale(0.5); }
-                            75%      { transform: translate(-50%, -50%) scale(1.3); }
+                            0%, 100% { transform: scale(1); }
+                            50%      { transform: scale(2); }
                         }
-                        .ate-tick {
-                            display: inline-flex;
-                            align-items: center;
-                            justify-content: center;
-                            width: 11px;
-                            height: 11px;
-                            border-radius: 50%;
-                            border: 1.5px solid var(--red);
-                            position: relative;
-                            vertical-align: middle;
-                            margin-right: 2px;
-                        }
-                        .ate-tick::before {
-                            content: '';
-                            position: absolute;
-                            top: 50%; left: 50%;
-                            width: 3.5px;
-                            height: 3.5px;
-                            border-radius: 50%;
-                            background: var(--red);
-                            transform: translate(-50%, -50%);
-                            animation: ate-dot-pop 1.6s ease-in-out infinite;
-                        }
+                        .ate-eyebrow { font-size: clamp(9px, 1.6vw, 12px); }
                     `}</style>
-                    <span className="ate-tick" /> Ismora Technologies Ltd. / est. 2026 / software &amp; systems
+                    <span style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        width: '11px', height: '11px', borderRadius: '50%',
+                        border: '1.5px solid var(--red)', position: 'relative',
+                        verticalAlign: 'middle', marginRight: '4px', flexShrink: 0,
+                    }}>
+                        <span style={{
+                            width: '3.5px', height: '3.5px', borderRadius: '50%',
+                            background: 'var(--red)', display: 'block',
+                            animation: 'ate-dot-pop 1.2s ease-in-out infinite',
+                        }} />
+                    </span>Ismora Technologies Ltd. / est. 2026 / software &amp; systems
                 </div>
 
                 <div className="ate-pillars" onMouseLeave={() => setHovered(null)}>
