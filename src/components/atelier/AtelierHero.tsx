@@ -15,6 +15,14 @@ export function AtelierHero() {
     const [idleIdx, setIdleIdx] = useState(0);
     const stageRef = useRef<HTMLDivElement>(null);
     const [sceneScale, setSceneScale] = useState(1);
+    const [isMobile, setMobile] = useState(false);
+
+    useEffect(() => {
+        const check = () => setMobile(window.innerWidth <= 640);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     useEffect(() => {
         const el = stageRef.current;
@@ -39,7 +47,7 @@ export function AtelierHero() {
     return (
         <section className="ate-hero" style={{ overflow: 'visible' }}>
             <div className="ate-hero-grid">
-                <div className="ate-eyebrow" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div className="ate-eyebrow" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '16px' }}>
                     <style>{`
                         @keyframes ate-dot-pop {
                             0%, 100% { transform: scale(1); }
@@ -90,13 +98,13 @@ export function AtelierHero() {
                     </div>
                 </div>
 
-                <p className="ate-hero-lede">
+                <p className="ate-hero-lede" style={isMobile ? { gridColumn: '1 / -1' } : undefined}>
                     Building products and solutions for businesses tackling real, complex challenges.
                     We don&apos;t chase trends — we find <em>unique approaches</em> to hard problems.
                 </p>
 
-                <div className="ate-hero-meta">
-                    <Link href="/contact" className="ate-hero-cta">Schedule a consultation</Link>
+                <div className="ate-hero-meta" style={isMobile ? { gridColumn: '1 / -1', gridRow: 4, justifyContent: 'flex-start', marginTop: '4px' } : undefined}>
+                    <Link href="/contact" className="ate-hero-cta" style={{ whiteSpace: 'nowrap', marginTop: 0 }}>Schedule a consultation</Link>
                 </div>
             </div>
         </section>

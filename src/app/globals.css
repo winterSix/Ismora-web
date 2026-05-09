@@ -273,7 +273,130 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(232,32,28,0.6); }
   50% { opacity: 0.5; box-shadow: 0 0 0 8px rgba(232,32,28,0); }
 }
-/* nav mobile handled in main responsive block below */
+/* Hamburger icon */
+.ate-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 20px;
+  height: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.ate-hamburger span {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background: var(--paper);
+  border-radius: 2px;
+  transition: transform 380ms cubic-bezier(.2,.8,.2,1), opacity 250ms, width 380ms cubic-bezier(.2,.8,.2,1);
+  transform-origin: center;
+}
+.ate-hamburger.is-open span:nth-child(1) { transform: translateY(6.25px) rotate(45deg); }
+.ate-hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.ate-hamburger.is-open span:nth-child(3) { transform: translateY(-6.25px) rotate(-45deg); }
+
+/* Mobile full-screen overlay */
+.ate-mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  background: rgba(10, 10, 10, 0.94);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 36px 56px;
+  clip-path: circle(0% at calc(100% - 28px) 44px);
+  transition: clip-path 700ms cubic-bezier(.7, 0, .2, 1);
+  pointer-events: none;
+  overflow: hidden;
+}
+.ate-mobile-menu.is-open {
+  clip-path: circle(170% at calc(100% - 28px) 44px);
+  pointer-events: auto;
+}
+
+/* Mobile nav links */
+.ate-mobile-menu-links { display: flex; flex-direction: column; width: 100%; }
+.ate-mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(244, 241, 236, 0.07);
+  color: var(--paper);
+  text-decoration: none;
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity 300ms, transform 420ms cubic-bezier(.2,.8,.2,1), color 200ms;
+}
+.ate-mobile-menu.is-open .ate-mobile-link {
+  opacity: 1;
+  transform: translateX(0);
+}
+.ate-mobile-menu.is-open .ate-mobile-link:nth-child(1) { transition-delay: 260ms; }
+.ate-mobile-menu.is-open .ate-mobile-link:nth-child(2) { transition-delay: 325ms; }
+.ate-mobile-menu.is-open .ate-mobile-link:nth-child(3) { transition-delay: 390ms; }
+.ate-mobile-menu.is-open .ate-mobile-link:nth-child(4) { transition-delay: 455ms; }
+.ate-mobile-menu.is-open .ate-mobile-link:nth-child(5) { transition-delay: 520ms; }
+
+.ate-mobile-link-num {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  width: 26px;
+}
+.ate-mobile-link-label {
+  font-size: clamp(28px, 8vw, 44px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  flex: 1;
+  transition: color 200ms;
+}
+.ate-mobile-link-arrow {
+  font-size: 20px;
+  color: rgba(244, 241, 236, 0.2);
+  transition: color 250ms, transform 300ms cubic-bezier(.2,.8,.2,1);
+}
+.ate-mobile-link:hover .ate-mobile-link-arrow { color: var(--red); transform: translateX(6px); }
+.ate-mobile-link:hover .ate-mobile-link-label { color: var(--red); }
+.ate-mobile-link.is-active .ate-mobile-link-label { color: rgba(244, 241, 236, 0.45); }
+.ate-mobile-link.is-cta .ate-mobile-link-label { color: var(--red); }
+
+.ate-mobile-menu-foot {
+  position: absolute;
+  bottom: 36px;
+  left: 36px;
+  right: 36px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(244, 241, 236, 0.28);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 350ms 580ms, transform 400ms 580ms cubic-bezier(.2,.8,.2,1);
+}
+.ate-mobile-menu.is-open .ate-mobile-menu-foot { opacity: 1; transform: translateY(0); }
+
+/* Show/hide based on breakpoint */
+@media (max-width: 640px) {
+  .ate-nav-d { display: none !important; }
+  .ate-hamburger.ate-nav-m { display: flex; }
+}
+@media (min-width: 641px) {
+  .ate-mobile-menu { display: none !important; }
+  .ate-hamburger { display: none !important; }
+}
 
 /* Home hero */
 .ate-home { padding-top: 72px; }
@@ -297,7 +420,7 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   color: var(--muted);
   grid-column: 1 / -1;
   margin-top: clamp(16px, 4vw, 48px);
-  margin-bottom: -16px;
+  margin-bottom: 16px;
 }
 .ate-tick {
   color: var(--red);

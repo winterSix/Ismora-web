@@ -18,7 +18,7 @@ export function AtelierBackdrop() {
                 }}
             />
             <div className="ate-backdrop" aria-hidden="true">
-                <div className="ate-backdrop-glow" />
+                <div className="ate-backdrop-glow" style={{ WebkitMaskPosition: '-11px -11px', maskPosition: '-11px -11px' }} />
                 <div className="ate-backdrop-vignette" />
             </div>
         </>
