@@ -227,11 +227,7 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(1.1);
   border: none;
   border-radius: 100px;
-  box-shadow:
-    0 1.5px 0 0 rgba(255,255,255,0.22) inset,
-    0 -1px 0 0 rgba(255,255,255,0.06) inset,
-    0 0 0 1px rgba(255,255,255,0.10),
-    0 8px 32px rgba(0,0,0,0.45);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
 }
 .ate-nav-divider {
   width: 1px; height: 22px;
@@ -307,8 +303,23 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--muted);
   grid-column: 1 / -1;
+  margin-top: clamp(16px, 4vw, 48px);
+  margin-bottom: -16px;
 }
-.ate-tick { color: var(--red); }
+.ate-tick {
+  color: var(--red);
+  display: inline-block;
+  animation: ate-tick-pop 2.4s ease-in-out infinite;
+}
+@keyframes ate-tick-pop {
+  0%   { transform: scale(1);    opacity: 1; }
+  15%  { transform: scale(1.5);  opacity: 1; }
+  30%  { transform: scale(0.15); opacity: 0; }
+  55%  { transform: scale(0.15); opacity: 0; }
+  70%  { transform: scale(1.3);  opacity: 1; }
+  85%  { transform: scale(0.9);  opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
 
 /* Three pillars (left) */
 .ate-pillars {
@@ -339,7 +350,7 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   padding-top: 20px;
 }
 .ate-pillar-word {
-  font-size: clamp(48px, 8vw, 160px);
+  font-size: clamp(20px, 7vw, 160px);
   line-height: 0.95;
   letter-spacing: -0.04em;
   font-weight: 500;
@@ -348,7 +359,7 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   position: relative;
 }
 .ate-pillar-copy {
-  font-size: 15px;
+  font-size: clamp(12px, 1.4vw, 15px);
   color: var(--muted);
   max-width: 460px;
   line-height: 1.4;
@@ -367,7 +378,7 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
     -2px 0 0 rgba(244, 241, 236, 0.25),
     0 0 30px rgba(232, 32, 28, 0.25);
 }
-.ate-pillar.is-hot .ate-pillar-copy { opacity: 1; max-height: 60px; transform: translateX(0); }
+.ate-pillar.is-hot .ate-pillar-copy { opacity: 1; max-height: 120px; transform: translateX(0); }
 .ate-pillar.is-dim {
   opacity: 0.35;
   filter: blur(0.6px) saturate(0.6);
@@ -1852,23 +1863,9 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
   .ate-link { padding: 6px 10px; font-size: 12px; }
   .ate-link-num { display: none; }
 
-  /* Hero — stack vertically, keep 3D stage in flow */
-  .ate-hero-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto;
-    min-height: unset;
-    gap: 32px;
-  }
-  .ate-eyebrow { grid-column: 1; grid-row: 1; }
-  .ate-pillars  { grid-column: 1; grid-row: 2; }
-  .ate-hero-stage {
-    grid-column: 1;
-    grid-row: 3;
-    width: min(65vw, 380px);
-    margin: 0 auto;
-  }
-  .ate-hero-lede { grid-column: 1; grid-row: 4; }
-  .ate-hero-meta { grid-column: 1; grid-row: 5; justify-self: start; }
+  /* Hero — keep side-by-side, shrink proportionally */
+  .ate-hero-grid { gap: 20px; min-height: unset; }
+  .ate-hero-stage { width: min(43vw, 380px); }
 
   /* Sections */
   .ate-manifest-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
@@ -1894,12 +1891,11 @@ em { font-family: "Space Grotesk", sans-serif; font-style: italic; font-weight: 
 
   /* Hero */
   .ate-home { padding-top: 60px; }
-  .ate-hero { padding: 12px 20px 32px; }
-  .ate-hero-grid { gap: 24px; }
-  .ate-pillar-word { font-size: clamp(40px, 13vw, 72px); }
-  .ate-hero-stage { width: min(80vw, 260px); }
-  .ate-hero-lede { font-size: 16px; }
-  .ate-hero-meta { flex-wrap: wrap; gap: 12px; }
+  .ate-hero { padding: 12px 16px 32px; }
+  .ate-hero-grid { gap: 10px; min-height: unset; }
+  .ate-hero-stage { width: 44vw; }
+  .ate-hero-lede { font-size: 14px; }
+  .ate-hero-meta { flex-wrap: wrap; gap: 8px; font-size: 10px; }
   .ate-hero-meta-line { display: none; }
 
   /* Inner pages */

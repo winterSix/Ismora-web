@@ -4,17 +4,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { Model3D } from './Model3D';
 
-function useIsMobile() {
-    const [mobile, setMobile] = useState(false);
-    useEffect(() => {
-        const check = () => setMobile(window.innerWidth <= 960);
-        check();
-        window.addEventListener('resize', check);
-        return () => window.removeEventListener('resize', check);
-    }, []);
-    return mobile;
-}
-
 const pillars = [
     { k: 'insight' as const, label: 'Insight', num: '01', copy: 'Data intelligence that drives real decisions.' },
     { k: 'infrastructure' as const, label: 'Infrastructure', num: '02', copy: 'Hardware is a feeling.' },
@@ -24,7 +13,6 @@ const pillars = [
 export function AtelierHero() {
     const [hovered, setHovered] = useState<string | null>(null);
     const [idleIdx, setIdleIdx] = useState(0);
-    const isMobile = useIsMobile();
     const stageRef = useRef<HTMLDivElement>(null);
     const [sceneScale, setSceneScale] = useState(1);
 
@@ -50,14 +38,40 @@ export function AtelierHero() {
 
     return (
         <section className="ate-hero">
-            <div className="ate-hero-grid" style={isMobile ? {
-                gridTemplateColumns: '1fr',
-                gridTemplateRows: 'auto auto auto auto auto',
-                minHeight: 'unset',
-                gap: '24px',
-            } : undefined}>
-                <div className="ate-eyebrow" style={{ marginTop: '32px', marginBottom: '-16px' }}>
-                    <span className="ate-tick">◉</span> Ismora Technologies Ltd. / est. 2026 / software &amp; systems
+            <div className="ate-hero-grid">
+                <div className="ate-eyebrow">
+                    <style>{`
+                        @keyframes ate-dot-pop {
+                            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+                            35%      { transform: translate(-50%, -50%) scale(1.9); }
+                            55%      { transform: translate(-50%, -50%) scale(0.5); }
+                            75%      { transform: translate(-50%, -50%) scale(1.3); }
+                        }
+                        .ate-tick {
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 11px;
+                            height: 11px;
+                            border-radius: 50%;
+                            border: 1.5px solid var(--red);
+                            position: relative;
+                            vertical-align: middle;
+                            margin-right: 2px;
+                        }
+                        .ate-tick::before {
+                            content: '';
+                            position: absolute;
+                            top: 50%; left: 50%;
+                            width: 3.5px;
+                            height: 3.5px;
+                            border-radius: 50%;
+                            background: var(--red);
+                            transform: translate(-50%, -50%);
+                            animation: ate-dot-pop 1.6s ease-in-out infinite;
+                        }
+                    `}</style>
+                    <span className="ate-tick" /> Ismora Technologies Ltd. / est. 2026 / software &amp; systems
                 </div>
 
                 <div className="ate-pillars" onMouseLeave={() => setHovered(null)}>
@@ -76,12 +90,7 @@ export function AtelierHero() {
                     ))}
                 </div>
 
-                <div ref={stageRef} className="ate-hero-stage" aria-hidden="true" style={isMobile ? {
-                    gridColumn: '1',
-                    gridRow: '3',
-                    width: 'min(70vw, 400px)',
-                    margin: '0 auto',
-                } : undefined}>
+                <div ref={stageRef} className="ate-hero-stage" aria-hidden="true">
                     <div style={{ position: 'absolute', inset: 0, zoom: sceneScale }}>
                         <Model3D kind="insight" active={showing === 'insight'} any />
                         <Model3D kind="infrastructure" active={showing === 'infrastructure'} any />
@@ -94,15 +103,13 @@ export function AtelierHero() {
                     </div>
                 </div>
 
-                <p className="ate-hero-lede" style={isMobile ? { gridColumn: '1', gridRow: '4' } : undefined}>
+                <p className="ate-hero-lede">
                     Building products and solutions for businesses tackling real, complex challenges.
                     We don&apos;t chase trends — we find <em>unique approaches</em> to hard problems.
                 </p>
 
-                <div className="ate-hero-meta" style={isMobile ? { gridColumn: '1', gridRow: '5', justifySelf: 'start' } : undefined}>
+                <div className="ate-hero-meta">
                     <Link href="/contact" className="ate-hero-cta">Schedule a consultation</Link>
-                    <span className="ate-hero-meta-line" />
-                    <span>Hover the pillars</span>
                 </div>
             </div>
         </section>
