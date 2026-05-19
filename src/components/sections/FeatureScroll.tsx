@@ -19,8 +19,11 @@ import {
 import { FeatureSection } from './FeatureSection';
 
 const N = FEATURE_PANELS.length; // 3
-const R = 0.18; // length of each cross-swap transition (in scroll progress)
-const H = (1 - (N - 1) * R) / N; // length each panel rests centred
+// Holds are kept tiny so the S cross-swap is almost always in motion as you
+// scroll — that's what makes the pinned section feel like it's responding to
+// scroll rather than sitting frozen.
+const H = 0.07; // brief rest each panel sits centred
+const R = (1 - N * H) / (N - 1); // each cross-swap transition fills the rest
 
 // Scroll-progress windows for each transition: [start, end]
 const TRANS: [number, number][] = [];
@@ -29,35 +32,72 @@ for (let k = 0; k < N - 1; k++) {
   TRANS.push([s, s + R]);
 }
 
-const S = 90; // cross-swap slide distance, % of each half's width
+const S = 90; // horizontal slide distance, % of each half's width
+const A = 42; // vertical arc amplitude, % of each half's height (the "S" bend)
 const EASE = cubicBezier(0.42, 0, 0.2, 1); // smooth ease-in-out
 
+const mid = (k: number) => (TRANS[k][0] + TRANS[k][1]) / 2;
+
 /** Per-panel keyframes for the left half x, right half x, and opacity. */
+/**
+ * S cross-swap: a half slides horizontally while arcing vertically through a
+ * mid-transition point, so the outgoing and incoming trajectories trace an "S".
+ * Left half bends one way, right half bends the opposite way.
+ */
 function keyframes(i: number) {
   if (i === 0) {
+    // exits via transition 0
+    const s = TRANS[0][0];
+    const m = mid(0);
+    const e = TRANS[0][1];
     return {
-      inp: [0, TRANS[0][0], TRANS[0][1]],
-      lX: ['0%', '0%', `${S}%`],
-      rX: ['0%', '0%', `-${S}%`],
-      op: [1, 1, 0],
+      inp: [0, s, m, e],
+      lX: ['0%', '0%', `${S * 0.55}%`, `${S}%`],
+      lY: ['0%', '0%', `${A}%`, '0%'],
+      rX: ['0%', '0%', `-${S * 0.55}%`, `-${S}%`],
+      rY: ['0%', '0%', `-${A}%`, '0%'],
+      op: [1, 1, 0.55, 0],
     };
   }
   if (i === N - 1) {
+    // enters via the last transition
     const k = i - 1;
+    const s = TRANS[k][0];
+    const m = mid(k);
+    const e = TRANS[k][1];
     return {
-      inp: [TRANS[k][0], TRANS[k][1], 1],
-      lX: [`-${S}%`, '0%', '0%'],
-      rX: [`${S}%`, '0%', '0%'],
-      op: [0, 1, 1],
+      inp: [s, m, e, 1],
+      lX: [`-${S}%`, `-${S * 0.55}%`, '0%', '0%'],
+      lY: ['0%', `-${A}%`, '0%', '0%'],
+      rX: [`${S}%`, `${S * 0.55}%`, '0%', '0%'],
+      rY: ['0%', `${A}%`, '0%', '0%'],
+      op: [0, 0.55, 1, 1],
     };
   }
+  // middle panel: enters via transition (i-1), exits via transition i
   const ke = i - 1;
   const kx = i;
   return {
-    inp: [TRANS[ke][0], TRANS[ke][1], TRANS[kx][0], TRANS[kx][1]],
-    lX: [`-${S}%`, '0%', '0%', `${S}%`],
-    rX: [`${S}%`, '0%', '0%', `-${S}%`],
-    op: [0, 1, 1, 0],
+    inp: [
+      TRANS[ke][0],
+      mid(ke),
+      TRANS[ke][1],
+      TRANS[kx][0],
+      mid(kx),
+      TRANS[kx][1],
+    ],
+    lX: [
+      `-${S}%`,
+      `-${S * 0.55}%`,
+      '0%',
+      '0%',
+      `${S * 0.55}%`,
+      `${S}%`,
+    ],
+    lY: ['0%', `-${A}%`, '0%', '0%', `${A}%`, '0%'],
+    rX: [`${S}%`, `${S * 0.55}%`, '0%', '0%', `-${S * 0.55}%`, `-${S}%`],
+    rY: ['0%', `${A}%`, '0%', '0%', `-${A}%`, '0%'],
+    op: [0, 0.55, 1, 1, 0.55, 0],
   };
 }
 
@@ -70,10 +110,14 @@ function PinnedPanel({
   i: number;
   progress: MotionValue<number>;
 }) {
-  const { inp, lX, rX, op } = keyframes(i);
+  const { inp, lX, lY, rX, rY, op } = keyframes(i);
   const leftX = useTransform(progress, inp, lX, { ease: EASE });
+  const leftY = useTransform(progress, inp, lY, { ease: EASE });
   const rightX = useTransform(progress, inp, rX, { ease: EASE });
+  const rightY = useTransform(progress, inp, rY, { ease: EASE });
   const opacity = useTransform(progress, inp, op);
+  // Gentle zoom: faded (crossing) = slightly smaller, centred = full size.
+  const scale = useTransform(opacity, [0, 1], [0.92, 1]);
   const pointerEvents = useTransform(opacity, [0, 0.6, 1], [
     'none',
     'none',
@@ -98,18 +142,18 @@ function PinnedPanel({
 
   return (
     <motion.div
-      style={{ opacity, visibility, zIndex: i, pointerEvents }}
+      style={{ opacity, scale, visibility, zIndex: i, pointerEvents }}
       className="absolute inset-0 flex items-center"
     >
       <div className="shell grid w-full grid-cols-2 items-center gap-[100px]">
         <motion.div
-          style={{ x: leftX, willChange: 'transform' }}
+          style={{ x: leftX, y: leftY, willChange: 'transform' }}
           className="flex justify-center"
         >
           {leftIsMedia ? media : copy}
         </motion.div>
         <motion.div
-          style={{ x: rightX, willChange: 'transform' }}
+          style={{ x: rightX, y: rightY, willChange: 'transform' }}
           className="flex justify-center"
         >
           {leftIsMedia ? copy : media}
