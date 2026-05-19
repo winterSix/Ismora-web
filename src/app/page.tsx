@@ -1,13 +1,34 @@
-import { api } from '@/lib/api';
-import { HomeClient } from './home-client';
+import { Hero } from '@/components/sections/Hero';
+import { About } from '@/components/sections/About';
+import { FeatureScroll } from '@/components/sections/FeatureScroll';
+import { SelectedWorks } from '@/components/sections/SelectedWorks';
+import { Faq } from '@/components/sections/Faq';
+import { Cta } from '@/components/sections/Cta';
+import { Footer } from '@/components/sections/Footer';
 
-export const revalidate = 60;
+export default function HomePage() {
+  return (
+    <main>
+      {/* 1 — Nav + Hero */}
+      <Hero />
 
-export default async function HomePage() {
-    const [config, featuredServices] = await Promise.all([
-        api.config().catch(() => null),
-        api.services.featured().catch(() => []),
-    ]);
+      {/* 2 — About Us */}
+      <About />
 
-    return <HomeClient config={config} featuredServices={featuredServices} />;
+      {/* 3–5 — Insights / Infrastructure / Innovation (pinned cross-swap) */}
+      <FeatureScroll />
+
+      {/* 6 — Selected Works */}
+      <SelectedWorks />
+
+      {/* 7 — FAQ */}
+      <Faq />
+
+      {/* 8 — CTA */}
+      <Cta />
+
+      {/* 9 — Footer */}
+      <Footer />
+    </main>
+  );
 }
