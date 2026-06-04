@@ -37,9 +37,10 @@
 * { box-sizing: border-box; }
 
 html { scrollbar-color: #2a2a2a #0a0a0a; scrollbar-width: thin; overflow-x: hidden; }
-::-webkit-scrollbar { width: 11px; height: 11px; }
+.snap-container { scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; border: 3px solid #0a0a0a; border-radius: 100px; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 100px; }
 ::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
 
 html, body { margin: 0; padding: 0; }
@@ -126,3 +127,123 @@ button { font: inherit; cursor: pointer; }
 @media (max-width: 860px) {
   .feature-row { padding: 16px; font-size: 15px; }
 }
+
+/* ── v2 cinematic scroll ─────────────────────────────────────── */
+.snap-container {
+  height: 100vh;
+  overflow-y: scroll;
+  /* proximity (not mandatory) so the hero track can be scrubbed freely while
+     the lower full-page panels still snap into place. */
+  scroll-snap-type: y proximity;
+}
+
+.snap-panel {
+  height: 100vh;
+  scroll-snap-align: start;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hero "scroll track": taller than the viewport so scrolling through it keeps
+   the sticky stage pinned — the scroll distance drives a staged reveal:
+   terrain only → headline → 3D diamond. */
+.hero-track {
+  position: relative;
+  height: 320vh;
+}
+
+.hero-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Hero panel marker (background is handled by <Image fill> inside the component) */
+.hero-bg { /* intentionally empty — class kept for future use */ }
+
+/* Gentle bob on the scroll-hint chevron */
+@keyframes heroChevronBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+.hero-chevron { animation: heroChevronBob 1.8s ease-in-out infinite; }
+
+/* Headline zooms in from a great distance */
+@keyframes zoomFromFar {
+  from {
+    opacity: 0;
+    transform: scale(0.04);
+    filter: blur(18px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Cone materialises */
+@keyframes coneAppear {
+  from { opacity: 0; transform: scale(0.15); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Tilted-axis spin: rotate3d(0.4,1,0) keeps the image never fully edge-on,
+   so a 2D PNG reads as a solid 3D object at all times */
+@keyframes rotateY {
+  from { transform: perspective(600px) rotate3d(0.4, 1, 0, 0deg); }
+  to   { transform: perspective(600px) rotate3d(0.4, 1, 0, 360deg); }
+}
+
+@keyframes rotateYTilt {
+  from { transform: perspective(500px) rotate3d(0.4, 1, 0, 0deg); }
+  to   { transform: perspective(500px) rotate3d(0.4, 1, 0, 360deg); }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(0); }
+  to   { transform: translateX(40%); }
+}
+
+.animate-zoom-from-far {
+  animation: zoomFromFar 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+  opacity: 0; /* hidden before animation starts */
+}
+
+.animate-cone-appear {
+  animation: coneAppear 0.8s ease-out 1.9s forwards;
+  opacity: 0;
+}
+
+.animate-cone-spin {
+  animation: rotateY 7s linear 2.7s infinite;
+}
+
+.animate-rotate-y {
+  animation: rotateYTilt 8s linear infinite;
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.6s ease-out forwards;
+}
+
+.animate-slide-right {
+  animation: slideRight 1.2s ease-out forwards;
+}
+
+/* Service card paragraph hover */
+.card-p {
+  font-family: Satoshi, var(--font-space-grotesk), sans-serif;
+  font-weight: 400;
+  font-size: clamp(0.8rem, 1vw, 15px);
+  line-height: 1.4;
+  color: #e0e0e6;
+  transition: color 0.2s ease;
+}
+.service-card:hover .card-p { color: #ffffff; }
