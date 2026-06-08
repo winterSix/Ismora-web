@@ -43,7 +43,7 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
 
       {SECTIONS.map((label, i) => {
         const isActive = i === activeSection;
-        const isDisabled = i > 2;
+        const isDisabled = i > 3;
         return (
           <button
             key={label}
@@ -74,7 +74,7 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
               style={{
                 fontFamily: 'var(--font-space-grotesk), sans-serif',
                 fontWeight: isActive ? 500 : 300,
-                fontSize: isActive ? 16 : 14,
+                fontSize: isActive ? 13 : 11,
                 color: isActive ? '#f0000c' : '#ffffff',
                 textTransform: 'uppercase',
                 whiteSpace: 'nowrap',

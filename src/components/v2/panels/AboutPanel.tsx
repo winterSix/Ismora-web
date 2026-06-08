@@ -1,25 +1,68 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
 import type { Shape3D } from '../Object3DViewer';
 
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
+
+// About paragraphs revealed word-by-word on scroll (grey → white).
+const P1_REST =
+  'was founded in Lagos in 2026 by Ismail Raji. The company builds software, integrated infrastructure, and connected systems for institutions, founders, and operating teams.'.split(
+    ' '
+  );
+const P2 =
+  "Ismora was created to solve a major gap in Africa's business landscape. Many companies are expected to meet global standards using systems and tools that were not built for local realities like unreliable networks, strict regulations, and operational challenges. Instead of treating these as obstacles, Ismora sees them as the foundation for better design and innovation.".split(
+    ' '
+  );
+const TOTAL_WORDS = P1_REST.length + P2.length;
+
+/** Renders words that light up grey→white one at a time as `wp` (0→1) advances. */
+function RevealWords({
+  words,
+  offset,
+  total,
+  wp,
+}: {
+  words: string[];
+  offset: number;
+  total: number;
+  wp: number;
+}) {
+  const lit = wp * total;
+  return (
+    <>
+      {words.map((w, j) => {
+        const t = clamp(lit - (offset + j)); // 0→1 for this word
+        const c = Math.round(186 + 69 * t); // #bababa → #ffffff
+        return (
+          <span key={j} style={{ color: `rgb(${c},${c},${c})`, transition: 'color 0.12s linear' }}>
+            {w}{' '}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 const CARDS: { title: string; shape: Shape3D; paragraph: string }[] = [
   {
     title: 'Data that shows its work',
-    shape: 'orb',
+    shape: 'diamond',
     paragraph:
       "Numbers without context are noise. We build the dashboards, reports, and analytics layers that let leaders see what’s actually happening in their business and defend the decisions they make from it. Real-time when it has to be. Audit-grade when it counts.",
   },
   {
     title: 'The systems beneath the business',
-    shape: 'structure',
+    shape: 'diamond',
     paragraph:
       'The unglamorous middle layer is where most software projects fail. We build platforms, integrations, and connected systems that work reliably across every transaction, shift, and audit, from web and mobile to payments, identity, backend systems, and hardware.',
   },
   {
     title: 'Built for here, not borrowed from elsewhere',
-    shape: 'swirl',
+    shape: 'diamond',
     paragraph:
       "Great software for Nigerian businesses isn’t copied from Silicon Valley. It’s built for local realities, unstable networks, regulatory demands, real team workflows, and unreliable internet. We design systems that work in the environments our clients actually operate in.",
   },
@@ -27,149 +70,179 @@ const CARDS: { title: string; shape: Shape3D; paragraph: string }[] = [
 
 interface AboutPanelProps {
   isVisible: boolean;
+  /** 0 → 1 reveal progress: scrolls the content up and flies the gem top → left. */
+  progress: number;
 }
 
-export function AboutPanel({ isVisible }: AboutPanelProps) {
+export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
+  // Measure how much taller the content is than the viewport so progress can
+  // scroll it fully into view (parallax) without an inner scrollbar.
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState(0);
+
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const parent = el.parentElement;
+      const avail = parent?.clientHeight ?? window.innerHeight;
+      setOverflow(Math.max(0, el.scrollHeight - avail));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  // Diamond enters big at centre (matching where the hero left it), then
+  // travels up to settle smaller at the top-centre over the first half of the
+  // scroll. The About content fades in as it rises, and the cards parallax up
+  // over the second half. So: clean diamond in the middle → diamond at top
+  // with content revealed.
+  // Content appears first (fast), and the diamond travels straight from the
+  // middle up to the top — starting immediately (NO dwell at the middle) and
+  // reaching the top quickly.
+  const contentReveal = clamp(progress / 0.06); // content shows first, fast
+  const travelP = clamp(progress / 0.16); // immediate, quick rise — no hold
+  // Diagonal travel: from the centre up to the marked upper-left spot
+  // (above the "About Us" heading), not straight up.
+  const gemLeft = lerp(50, 30, travelP); // %  (centre → upper-left)
+  const gemTop = lerp(50, 7, travelP); // %
+  const gemSize = lerp(205, 150, travelP);
+  const contentScroll = clamp((progress - 0.25) / 0.75); // parallax cards once it's up top
+  const wordProgress = clamp((progress - 0.1) / 0.55); // word-by-word paragraph reveal
+
   return (
     <>
-      {/* Background gradient */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(to bottom, #323232 0%, #000000 38%)',
-          zIndex: 0,
-        }}
-      />
-
-      {/* Cone top-center */}
+      {/* Beautiful rotating gem — behind the text, flies top → far-left */}
       <div
         style={{
           position: 'absolute',
-          top: -20,
-          left: 'calc(50% - 331px)',
-          width: 204,
-          height: 204,
-          zIndex: 5,
+          left: `${gemLeft}%`,
+          top: `${gemTop}%`,
+          width: gemSize,
+          height: gemSize,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1,
           pointerEvents: 'none',
+          willChange: 'left, top, width, height',
         }}
       >
-        <Image
-          src="/images/cone.png"
-          alt=""
-          width={204}
-          height={204}
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: '-35%',
+            background:
+              'radial-gradient(circle, rgba(120,180,255,0.40) 0%, rgba(120,180,255,0.10) 45%, rgba(120,180,255,0) 70%)',
+            filter: 'blur(6px)',
+            zIndex: -1,
+          }}
         />
+        <Object3DViewer shape="diamond" size={Math.round(gemSize)} speed={0.6} />
       </div>
 
-      {/* Main scrollable content */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          /* Left padding clears the fixed sidebar rail (ends ~174px) so the
-             content begins right beside it; right/top/bottom stay compact. */
-          paddingTop: 'clamp(80px,8vw,120px)',
-          paddingRight: 'clamp(24px,5vw,80px)',
-          paddingBottom: 'clamp(24px,4vw,60px)',
-          paddingLeft: 'clamp(140px,14vw,220px)',
-          gap: 36,
-          overflowY: 'auto',
-        }}
-      >
-        {/* About heading + text */}
+      {/* Clip + parallax content — fades in as the diamond rises, then the
+          cards parallax up over the second half of the scroll */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 10, opacity: contentReveal }}>
         <div
-          className={isVisible ? 'animate-fade-slide-up' : ''}
+          ref={innerRef}
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 20,
-            opacity: isVisible ? undefined : 0,
+            paddingTop: 'clamp(150px,16vw,196px)',
+            paddingRight: 'clamp(24px,5vw,80px)',
+            paddingBottom: 'clamp(40px,5vw,72px)',
+            paddingLeft: 'clamp(140px,14vw,220px)',
+            gap: 30,
+            transform: `translateY(${-contentScroll * overflow}px)`,
+            willChange: 'transform',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Image
-              src="/ismora-logo.svg"
-              alt=""
-              width={27}
-              height={24}
-              style={{ filter: 'brightness(0) invert(1)', width: 27, height: 24 }}
-            />
-            <span
-              style={{
-                fontFamily: 'var(--font-space-grotesk), sans-serif',
-                fontWeight: 500,
-                fontSize: 'clamp(1.25rem,2vw,28px)',
-                color: '#ffffff',
-                letterSpacing: '-0.04em',
-              }}
-            >
-              About Us
-            </span>
-          </div>
-
-          <div style={{ maxWidth: 1201 }}>
-            <p
-              style={{
-                fontFamily: 'Satoshi, var(--font-space-grotesk), sans-serif',
-                fontSize: 'clamp(0.95rem,1.6vw,22px)',
-                lineHeight: 1.5,
-                letterSpacing: '-0.03em',
-                margin: 0,
-              }}
-            >
-              <strong style={{ color: '#ffffff' }}>Ismora Technologies Limited </strong>
-              <span style={{ color: '#bababa' }}>
-                was founded in Lagos in 2026 by Ismail Raji. The company builds software,
-                integrated infrastructure, and connected systems for institutions, founders,
-                and operating teams.
+          {/* About heading + text */}
+          <div
+            className={isVisible ? 'animate-fade-slide-up' : ''}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20,
+              opacity: isVisible ? undefined : 0,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Image
+                src="/ismora-logo.svg"
+                alt=""
+                width={27}
+                height={24}
+                style={{ filter: 'brightness(0) invert(1)', width: 27, height: 24 }}
+              />
+              <span
+                style={{
+                  fontFamily: 'var(--font-space-grotesk), sans-serif',
+                  fontWeight: 500,
+                  fontSize: 'clamp(1.25rem,2vw,28px)',
+                  color: '#ffffff',
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                About Us
               </span>
-            </p>
-            <p
-              style={{
-                fontFamily: 'Satoshi, var(--font-space-grotesk), sans-serif',
-                fontSize: 'clamp(0.95rem,1.6vw,22px)',
-                lineHeight: 1.5,
-                letterSpacing: '-0.03em',
-                color: '#bababa',
-                marginTop: '0.8em',
-                marginBottom: 0,
-              }}
-            >
-              Ismora was created to solve a major gap in Africa&apos;s business landscape.
-              Many companies are expected to meet global standards using systems and tools
-              that were not built for local realities like unreliable networks, strict
-              regulations, and operational challenges. Instead of treating these as
-              obstacles, Ismora sees them as the foundation for better design and
-              innovation.
-            </p>
-          </div>
-        </div>
+            </div>
 
-        {/* Service cards */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 24,
-          }}
-        >
-          {CARDS.map((card, i) => (
-            <ServiceCard
-              key={card.title}
-              title={card.title}
-              shape={card.shape}
-              paragraph={card.paragraph}
-              isVisible={isVisible}
-              delay={0.2 + i * 0.15}
-            />
-          ))}
+            <div style={{ maxWidth: 1201 }}>
+              <p
+                style={{
+                  fontFamily: 'Satoshi, var(--font-space-grotesk), sans-serif',
+                  fontSize: 'clamp(0.9rem,1.4vw,19px)',
+                  lineHeight: 1.45,
+                  letterSpacing: '-0.03em',
+                  margin: 0,
+                }}
+              >
+                <strong style={{ color: '#ffffff' }}>Ismora Technologies Limited </strong>
+                <RevealWords words={P1_REST} offset={0} total={TOTAL_WORDS} wp={wordProgress} />
+              </p>
+              <p
+                style={{
+                  fontFamily: 'Satoshi, var(--font-space-grotesk), sans-serif',
+                  fontSize: 'clamp(0.9rem,1.4vw,19px)',
+                  lineHeight: 1.45,
+                  letterSpacing: '-0.03em',
+                  marginTop: '0.8em',
+                  marginBottom: 0,
+                }}
+              >
+                <RevealWords
+                  words={P2}
+                  offset={P1_REST.length}
+                  total={TOTAL_WORDS}
+                  wp={wordProgress}
+                />
+              </p>
+            </div>
+          </div>
+
+          {/* Service cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 24,
+              flexShrink: 0,
+            }}
+          >
+            {CARDS.map((card, i) => (
+              <ServiceCard
+                key={card.title}
+                title={card.title}
+                shape={card.shape}
+                paragraph={card.paragraph}
+                isVisible={isVisible}
+                delay={0.2 + i * 0.15}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </>
@@ -236,6 +309,9 @@ function ServiceCard({
             letterSpacing: '-0.04em',
             lineHeight: 1.2,
             margin: 0,
+            minHeight: '2.4em',
+            display: 'flex',
+            alignItems: 'flex-start',
           }}
         >
           {title}
@@ -243,16 +319,15 @@ function ServiceCard({
 
         <div style={{ height: 1, background: 'rgba(255,255,255,0.2)', width: '100%' }} />
 
-        {/* 3D object — true geometry via Three.js, no flat-paper effect */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            height: 160,
+            height: 132,
           }}
         >
-          <Object3DViewer shape={shape} size={140} speed={0.5} />
+          <Object3DViewer shape={shape} size={132} speed={0.5} />
         </div>
 
         <p className="card-p" style={{ margin: 0 }}>

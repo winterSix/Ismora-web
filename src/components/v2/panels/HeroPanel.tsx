@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
 
 interface HeroPanelProps {
@@ -17,24 +16,10 @@ export function HeroPanel({ progress }: HeroPanelProps) {
   const reveal = clamp((progress - 0.52) / 0.33);
   // Headline drifts up slightly to make room as the diamond grows.
   const headlineShift = -30 * reveal;
-  // "Scroll to Discover" sits over the bare terrain, then fades as text arrives.
-  const scrollHint = clamp(1 - progress / 0.16);
 
   return (
     <>
-      {/* Terrain background */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <Image
-          src="/images/terrain-bg.png"
-          alt=""
-          fill
-          style={{ objectFit: 'cover', objectPosition: 'center' }}
-          priority
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)' }} />
-      </div>
-
-      {/* Centre content: headline + 3D diamond */}
+      {/* Centre content: headline + 3D diamond (terrain bg is the fixed layer) */}
       <div
         style={{
           position: 'absolute',
@@ -85,50 +70,6 @@ export function HeroPanel({ progress }: HeroPanelProps) {
         >
           <Object3DViewer shape="diamond" size={320} speed={0.55} />
         </div>
-      </div>
-
-      {/* Scroll to Discover — fades out as the reveal begins */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-          opacity: scrollHint,
-          pointerEvents: scrollHint < 0.05 ? 'none' : 'auto',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontWeight: 400,
-            fontSize: 16,
-            color: '#ffffff',
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-          }}
-        >
-          Scroll to Discover
-        </span>
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="hero-chevron"
-        >
-          <polyline points="6 9 12 15 18 9" />
-          <polyline points="6 13 12 19 18 13" />
-        </svg>
       </div>
     </>
   );

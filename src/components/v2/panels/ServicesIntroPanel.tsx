@@ -1,43 +1,37 @@
-import Image from 'next/image';
+import { Object3DViewer } from '../Object3DViewer';
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 interface ServicesIntroPanelProps {
   isVisible: boolean;
+  /** 0 → 1 scroll progress: flies the crystal cube top-centre → right-middle. */
+  progress: number;
 }
 
-export function ServicesIntroPanel({ isVisible }: ServicesIntroPanelProps) {
+export function ServicesIntroPanel({ isVisible, progress }: ServicesIntroPanelProps) {
+  const cubeLeft = lerp(50, 84, progress); // %
+  const cubeTop = lerp(16, 50, progress); // %
+  const cubeSize = lerp(200, 230, progress);
+
   return (
     <>
-      {/* Radial red background */}
-      <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <Image
-          src="/images/radial-red-bg.png"
-          alt=""
-          fill
-          style={{ objectFit: 'cover', objectPosition: 'center' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)' }} />
-      </div>
+      {/* Radial red background is handled by the fixed crossfading layer */}
 
-      {/* Cone — slides right when visible */}
+      {/* Crystal cube — scroll-driven top-centre → right-middle */}
       <div
-        className={isVisible ? 'animate-slide-right' : ''}
         style={{
           position: 'absolute',
-          top: 190,
-          left: 'calc(50% - 12px)',
-          width: 204,
-          height: 204,
+          left: `${cubeLeft}%`,
+          top: `${cubeTop}%`,
+          width: cubeSize,
+          height: cubeSize,
+          transform: 'translate(-50%, -50%)',
           zIndex: 5,
           pointerEvents: 'none',
+          willChange: 'left, top, width, height',
         }}
       >
-        <Image
-          src="/images/cone.png"
-          alt=""
-          width={204}
-          height={204}
-          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-        />
+        <Object3DViewer shape="diamond" size={Math.round(cubeSize)} speed={0.55} />
       </div>
 
       {/* Centered headline */}
@@ -50,6 +44,7 @@ export function ServicesIntroPanel({ isVisible }: ServicesIntroPanelProps) {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '0 clamp(24px, 6vw, 120px)',
+          pointerEvents: 'none',
         }}
       >
         <h2
@@ -64,44 +59,13 @@ export function ServicesIntroPanel({ isVisible }: ServicesIntroPanelProps) {
             textAlign: 'center',
             opacity: isVisible ? undefined : 0,
             margin: 0,
+            textShadow: '0 2px 30px rgba(0,0,0,0.5)',
           }}
         >
           What we build and
           <br />
           How we build it
         </h2>
-      </div>
-
-      {/* Scroll to Discover */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontWeight: 400,
-            fontSize: 16,
-            color: '#ffffff',
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-          }}
-        >
-          Scroll to Discover
-        </span>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 12 15 18 9" />
-          <polyline points="6 13 12 19 18 13" />
-        </svg>
       </div>
     </>
   );
