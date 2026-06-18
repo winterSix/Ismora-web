@@ -1,20 +1,30 @@
+'use client';
+
 import { Object3DViewer } from '../Object3DViewer';
+import { useReveal } from '../useReveal';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+const CUBE_BASE = 230; // fixed canvas size — scaled via CSS, never resized per frame
 
 interface ServicesIntroPanelProps {
   isVisible: boolean;
   /** 0 → 1 scroll progress: flies the crystal cube top-centre → right-middle. */
   progress: number;
+  /** Whether this layer is on screen (pauses the 3D when it isn't). */
+  active: boolean;
 }
 
-export function ServicesIntroPanel({ isVisible, progress }: ServicesIntroPanelProps) {
+export function ServicesIntroPanel({ isVisible, progress, active }: ServicesIntroPanelProps) {
   const cubeLeft = lerp(50, 84, progress); // %
   const cubeTop = lerp(16, 50, progress); // %
-  const cubeSize = lerp(200, 230, progress);
+  const cubeScale = lerp(200 / CUBE_BASE, 1, progress);
+
+  // Headline rises + un-blurs into focus when the section first appears.
+  const scope = useReveal<HTMLDivElement>(isVisible, { y: 40, scale: 0.92, blur: 12, duration: 0.9 });
 
   return (
-    <>
+    <div ref={scope} style={{ display: 'contents' }}>
       {/* Radial red background is handled by the fixed crossfading layer */}
 
       {/* Crystal cube — scroll-driven top-centre → right-middle */}
@@ -23,15 +33,15 @@ export function ServicesIntroPanel({ isVisible, progress }: ServicesIntroPanelPr
           position: 'absolute',
           left: `${cubeLeft}%`,
           top: `${cubeTop}%`,
-          width: cubeSize,
-          height: cubeSize,
-          transform: 'translate(-50%, -50%)',
+          width: CUBE_BASE,
+          height: CUBE_BASE,
+          transform: `translate(-50%, -50%) scale(${cubeScale})`,
           zIndex: 5,
           pointerEvents: 'none',
-          willChange: 'left, top, width, height',
+          willChange: 'transform, left, top',
         }}
       >
-        <Object3DViewer shape="diamond" size={Math.round(cubeSize)} speed={0.55} />
+        <Object3DViewer shape="logo" size={CUBE_BASE} speed={0.5} active={active} />
       </div>
 
       {/* Centered headline */}
@@ -48,18 +58,17 @@ export function ServicesIntroPanel({ isVisible, progress }: ServicesIntroPanelPr
         }}
       >
         <h2
-          className={isVisible ? 'animate-fade-slide-up' : ''}
+          data-reveal
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontWeight: 400,
-            fontSize: 'clamp(2rem, 4vw, 58px)',
-            lineHeight: 1.15,
-            letterSpacing: '-0.04em',
+            fontWeight: 500,
+            fontSize: 'clamp(2.2rem, 4.6vw, 64px)',
+            lineHeight: 1.1,
+            letterSpacing: '-0.045em',
             color: '#ffffff',
             textAlign: 'center',
-            opacity: isVisible ? undefined : 0,
             margin: 0,
-            textShadow: '0 2px 30px rgba(0,0,0,0.5)',
+            textShadow: '0 2px 40px rgba(0,0,0,0.6)',
           }}
         >
           What we build and
@@ -67,6 +76,6 @@ export function ServicesIntroPanel({ isVisible, progress }: ServicesIntroPanelPr
           How we build it
         </h2>
       </div>
-    </>
+    </div>
   );
 }

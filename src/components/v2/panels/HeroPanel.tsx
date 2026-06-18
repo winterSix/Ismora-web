@@ -1,25 +1,28 @@
 import { Object3DViewer } from '../Object3DViewer';
 
 interface HeroPanelProps {
-  /** 0 → 1 scroll progress through the hero track (drives the diamond reveal). */
+  /** 0 → 1 scroll progress through the hero track (drives the staged reveal). */
   progress: number;
+  /** Whether the hero layer is on screen (pauses the 3D when it isn't). */
+  active: boolean;
 }
 
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 
-export function HeroPanel({ progress }: HeroPanelProps) {
+export function HeroPanel({ progress, active }: HeroPanelProps) {
   // Staged scroll reveal, all pinned on this page:
-  //  • progress 0.00–0.20  → terrain only
+  //  • progress 0.00–0.20  → living terrain only
   //  • progress 0.20–0.50  → headline fades/zooms in
-  //  • progress 0.52–0.85  → diamond materialises (then rotates via useFrame)
+  //  • progress 0.52–0.85  → the 3D brand mark materialises and rotates
   const headlineReveal = clamp((progress - 0.2) / 0.3);
   const reveal = clamp((progress - 0.52) / 0.33);
-  // Headline drifts up slightly to make room as the diamond grows.
-  const headlineShift = -30 * reveal;
+  // Headline drifts up slightly to make room as the mark grows.
+  const headlineShift = -34 * reveal;
 
   return (
     <>
-      {/* Centre content: headline + 3D diamond (terrain bg is the fixed layer) */}
+      {/* Centre content: headline + the extruded Ismora mark (the living
+          terrain scene is the fixed layer behind) */}
       <div
         style={{
           position: 'absolute',
@@ -29,7 +32,7 @@ export function HeroPanel({ progress }: HeroPanelProps) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 40,
+          gap: 36,
           padding: '0 clamp(24px, 6vw, 120px)',
         }}
       >
@@ -37,17 +40,20 @@ export function HeroPanel({ progress }: HeroPanelProps) {
         <h1
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontWeight: 400,
-            fontSize: 'clamp(1.5rem, 3vw, 42px)',
-            lineHeight: 1.12,
-            letterSpacing: '-0.04em',
-            color: '#ffffff',
+            fontWeight: 500,
+            fontSize: 'clamp(1.9rem, 4.2vw, 58px)',
+            lineHeight: 1.08,
+            letterSpacing: '-0.045em',
             textAlign: 'center',
-            maxWidth: 580,
+            maxWidth: 820,
             margin: 0,
+            background: 'linear-gradient(180deg, #ffffff 55%, #ffb9b4 130%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            color: 'transparent',
             opacity: headlineReveal,
             transform: `translateY(${headlineShift}px) scale(${0.72 + 0.28 * headlineReveal})`,
-            filter: `blur(${(1 - headlineReveal) * 10}px)`,
+            filter: `blur(${(1 - headlineReveal) * 10}px) drop-shadow(0 4px 30px rgba(0,0,0,0.55))`,
             transition: 'opacity 0.08s linear',
             willChange: 'transform, opacity, filter',
           }}
@@ -55,20 +61,21 @@ export function HeroPanel({ progress }: HeroPanelProps) {
           We build the platforms African businesses depend on
         </h1>
 
-        {/* 3D diamond — revealed by scroll, scales in straight (centred),
-            then rotates continuously */}
+        {/* The Ismora mark in 3D — revealed by scroll, scales in centred,
+            then rotates continuously above the terrain */}
         <div
           style={{
-            width: 320,
-            height: 320,
+            width: 340,
+            height: 340,
             opacity: reveal,
             transform: `scale(${0.55 + 0.45 * reveal})`,
             transformOrigin: 'center center',
             transition: 'opacity 0.08s linear',
             willChange: 'transform, opacity',
+            filter: 'drop-shadow(0 30px 80px rgba(232,32,28,0.35))',
           }}
         >
-          <Object3DViewer shape="diamond" size={320} speed={0.55} />
+          <Object3DViewer shape="logo" size={340} speed={0.5} active={active} />
         </div>
       </div>
     </>

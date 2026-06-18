@@ -1,4 +1,7 @@
+'use client';
+
 import Image from 'next/image';
+import { useReveal } from '../useReveal';
 
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -70,9 +73,11 @@ export function OurWorksPanel({
 }) {
   const N = projects.length;
   const step = N > 1 ? 1 / (N - 1) : 1; // card i (i≥1) flips in over [(i-1)·step, i·step]
+  const revealScope = useReveal<HTMLDivElement>(isVisible, { y: 24, duration: 0.6 });
 
   return (
     <div
+      ref={revealScope}
       style={{
         position: 'absolute',
         inset: 0,
@@ -88,8 +93,8 @@ export function OurWorksPanel({
     >
       {/* Heading */}
       <div
-        className={isVisible ? 'animate-fade-slide-up' : ''}
-        style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: isVisible ? undefined : 0, flexShrink: 0 }}
+        data-reveal
+        style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}
       >
         <Image
           src="/ismora-logo.svg"
@@ -150,10 +155,10 @@ function WorkCard({ project }: { project: Project }) {
     <div
       style={{
         height: '100%',
-        borderRadius: 20,
-        background: '#101013',
-        border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 -12px 44px rgba(0,0,0,0.55)',
+        borderRadius: 24,
+        background: 'linear-gradient(180deg, #16161b 0%, #0b0b0e 100%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 -16px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
         padding: 'clamp(10px,1vw,16px)',
         display: 'flex',
         flexDirection: 'column',
@@ -166,14 +171,25 @@ function WorkCard({ project }: { project: Project }) {
         style={{
           flex: 1,
           minHeight: 110,
-          borderRadius: 14,
-          background: `linear-gradient(135deg, ${project.color}, ${project.color}cc)`,
+          borderRadius: 16,
+          background: `radial-gradient(90% 140% at 75% 0%, ${project.accent}2e 0%, rgba(0,0,0,0) 55%), radial-gradient(70% 110% at 20% 100%, ${project.accent}1f 0%, rgba(0,0,0,0) 60%), linear-gradient(135deg, ${project.color}, ${project.color}b8)`,
+          border: '1px solid rgba(255,255,255,0.06)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        {/* sweeping highlight across the preview */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(115deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0) 60%)',
+          }}
+        />
         {project.logo === 'ismora' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <Image
@@ -243,7 +259,15 @@ function WorkCard({ project }: { project: Project }) {
           ['Release Date', project.date],
         ].map(([label, value]) => (
           <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontFamily: 'var(--font-space-grotesk), sans-serif', fontSize: 13, color: '#8a8a90' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-space-grotesk), sans-serif',
+                fontSize: 11,
+                color: '#6e6e76',
+                textTransform: 'uppercase',
+                letterSpacing: '0.14em',
+              }}
+            >
               {label}
             </span>
             <span

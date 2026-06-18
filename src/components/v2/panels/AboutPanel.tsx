@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
 import type { Shape3D } from '../Object3DViewer';
+import { useReveal } from '../useReveal';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
@@ -50,19 +51,19 @@ function RevealWords({
 const CARDS: { title: string; shape: Shape3D; paragraph: string }[] = [
   {
     title: 'Data that shows its work',
-    shape: 'diamond',
+    shape: 'orb',
     paragraph:
       "Numbers without context are noise. We build the dashboards, reports, and analytics layers that let leaders see what’s actually happening in their business and defend the decisions they make from it. Real-time when it has to be. Audit-grade when it counts.",
   },
   {
     title: 'The systems beneath the business',
-    shape: 'diamond',
+    shape: 'structure',
     paragraph:
       'The unglamorous middle layer is where most software projects fail. We build platforms, integrations, and connected systems that work reliably across every transaction, shift, and audit, from web and mobile to payments, identity, backend systems, and hardware.',
   },
   {
     title: 'Built for here, not borrowed from elsewhere',
-    shape: 'diamond',
+    shape: 'swirl',
     paragraph:
       "Great software for Nigerian businesses isn’t copied from Silicon Valley. It’s built for local realities, unstable networks, regulatory demands, real team workflows, and unreliable internet. We design systems that work in the environments our clients actually operate in.",
   },
@@ -72,13 +73,19 @@ interface AboutPanelProps {
   isVisible: boolean;
   /** 0 → 1 reveal progress: scrolls the content up and flies the gem top → left. */
   progress: number;
+  /** Whether this layer is on screen (pauses the 3D when it isn't). */
+  active: boolean;
 }
 
-export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
+const GEM_BASE = 205; // fixed canvas size — the gem shrinks via CSS scale, not resize
+
+export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
   // Measure how much taller the content is than the viewport so progress can
   // scroll it fully into view (parallax) without an inner scrollbar.
   const innerRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(0);
+  // Staggered GSAP entrance for the heading block + the three service cards.
+  const revealScope = useReveal<HTMLDivElement>(isVisible, { y: 32, stagger: 0.14 });
 
   useEffect(() => {
     const el = innerRef.current;
@@ -107,7 +114,7 @@ export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
   // (above the "About Us" heading), not straight up.
   const gemLeft = lerp(50, 30, travelP); // %  (centre → upper-left)
   const gemTop = lerp(50, 7, travelP); // %
-  const gemSize = lerp(205, 150, travelP);
+  const gemScale = lerp(1, 150 / GEM_BASE, travelP); // CSS scale (cheap) vs canvas resize
   const contentScroll = clamp((progress - 0.25) / 0.75); // parallax cards once it's up top
   const wordProgress = clamp((progress - 0.1) / 0.55); // word-by-word paragraph reveal
 
@@ -119,12 +126,12 @@ export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
           position: 'absolute',
           left: `${gemLeft}%`,
           top: `${gemTop}%`,
-          width: gemSize,
-          height: gemSize,
-          transform: 'translate(-50%, -50%)',
+          width: GEM_BASE,
+          height: GEM_BASE,
+          transform: `translate(-50%, -50%) scale(${gemScale})`,
           zIndex: 1,
           pointerEvents: 'none',
-          willChange: 'left, top, width, height',
+          willChange: 'transform, left, top',
         }}
       >
         <div
@@ -133,17 +140,17 @@ export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
             position: 'absolute',
             inset: '-35%',
             background:
-              'radial-gradient(circle, rgba(120,180,255,0.40) 0%, rgba(120,180,255,0.10) 45%, rgba(120,180,255,0) 70%)',
+              'radial-gradient(circle, rgba(232,32,28,0.35) 0%, rgba(232,32,28,0.08) 45%, rgba(232,32,28,0) 70%)',
             filter: 'blur(6px)',
             zIndex: -1,
           }}
         />
-        <Object3DViewer shape="diamond" size={Math.round(gemSize)} speed={0.6} />
+        <Object3DViewer shape="logo" size={GEM_BASE} speed={0.5} active={active} />
       </div>
 
       {/* Clip + parallax content — fades in as the diamond rises, then the
           cards parallax up over the second half of the scroll */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 10, opacity: contentReveal }}>
+      <div ref={revealScope} style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 10, opacity: contentReveal }}>
         <div
           ref={innerRef}
           style={{
@@ -160,12 +167,11 @@ export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
         >
           {/* About heading + text */}
           <div
-            className={isVisible ? 'animate-fade-slide-up' : ''}
+            data-reveal
             style={{
               display: 'flex',
               flexDirection: 'column',
               gap: 20,
-              opacity: isVisible ? undefined : 0,
               flexShrink: 0,
             }}
           >
@@ -232,14 +238,13 @@ export function AboutPanel({ isVisible, progress }: AboutPanelProps) {
               flexShrink: 0,
             }}
           >
-            {CARDS.map((card, i) => (
+            {CARDS.map((card) => (
               <ServiceCard
                 key={card.title}
                 title={card.title}
                 shape={card.shape}
                 paragraph={card.paragraph}
-                isVisible={isVisible}
-                delay={0.2 + i * 0.15}
+                active={active}
               />
             ))}
           </div>
@@ -253,23 +258,20 @@ function ServiceCard({
   title,
   shape,
   paragraph,
-  isVisible,
-  delay,
+  active,
 }: {
   title: string;
   shape: Shape3D;
   paragraph: string;
-  isVisible: boolean;
-  delay: number;
+  active: boolean;
 }) {
   return (
     <div
-      className={isVisible ? 'animate-fade-slide-up service-card' : 'service-card'}
+      data-reveal
+      className="service-card"
       style={{
         position: 'relative',
         padding: '20px 24px 24px',
-        opacity: isVisible ? undefined : 0,
-        animationDelay: isVisible ? `${delay}s` : undefined,
       }}
     >
       {/* Top-left bracket */}
@@ -327,7 +329,7 @@ function ServiceCard({
             height: 132,
           }}
         >
-          <Object3DViewer shape={shape} size={132} speed={0.5} />
+          <Object3DViewer shape={shape} size={132} speed={0.5} active={active} />
         </div>
 
         <p className="card-p" style={{ margin: 0 }}>

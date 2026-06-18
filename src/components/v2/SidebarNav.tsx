@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+
 const SECTIONS = [
   'Introduction',
   'About Us',
@@ -15,6 +18,19 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
+  const dotsRef = useRef<(HTMLSpanElement | null)[]>([]);
+
+  // Pop the dot of the freshly-activated section so the nav reacts to scroll.
+  useEffect(() => {
+    const dot = dotsRef.current[activeSection];
+    if (!dot) return;
+    gsap.fromTo(
+      dot,
+      { scale: 0.4 },
+      { scale: 1, duration: 0.5, ease: 'back.out(3)' }
+    );
+  }, [activeSection]);
+
   return (
     <nav
       style={{
@@ -28,16 +44,17 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
         gap: 50,
       }}
     >
-      {/* Vertical line */}
+      {/* Vertical line — fades out at both ends */}
       <div
         aria-hidden
         style={{
           position: 'absolute',
-          left: 4,
-          top: 0,
-          bottom: 0,
+          left: 3,
+          top: -24,
+          bottom: -24,
           width: 1,
-          background: 'rgba(255,255,255,0.25)',
+          background:
+            'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.22) 18%, rgba(255,255,255,0.22) 82%, rgba(255,255,255,0) 100%)',
         }}
       />
 
@@ -48,37 +65,45 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
           <button
             key={label}
             onClick={() => !isDisabled && onNavigate(i)}
+            className="sidebar-item"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
+              gap: 12,
               background: 'none',
               border: 'none',
               padding: 0,
               cursor: isDisabled ? 'default' : 'pointer',
-              opacity: isDisabled ? 0.4 : 1,
+              opacity: isDisabled ? 0.35 : 1,
             }}
           >
             <span
+              ref={(el) => {
+                dotsRef.current[i] = el;
+              }}
               style={{
-                width: 8,
-                height: 8,
+                width: 7,
+                height: 7,
                 borderRadius: '50%',
-                background: isActive ? '#f0000c' : '#ffffff',
+                background: isActive ? '#f0000c' : 'rgba(255,255,255,0.55)',
+                boxShadow: isActive ? '0 0 12px rgba(240,0,12,0.9), 0 0 4px rgba(240,0,12,0.9)' : 'none',
                 flexShrink: 0,
                 position: 'relative',
                 zIndex: 1,
+                transition: 'background 0.3s ease, box-shadow 0.3s ease',
               }}
             />
             <span
+              className={isActive ? undefined : 'sidebar-label'}
               style={{
                 fontFamily: 'var(--font-space-grotesk), sans-serif',
                 fontWeight: isActive ? 500 : 300,
-                fontSize: isActive ? 13 : 11,
-                color: isActive ? '#f0000c' : '#ffffff',
+                fontSize: 11,
+                color: isActive ? '#ffffff' : 'rgba(255,255,255,0.5)',
                 textTransform: 'uppercase',
                 whiteSpace: 'nowrap',
-                letterSpacing: '0.04em',
+                letterSpacing: isActive ? '0.22em' : '0.16em',
+                transition: 'color 0.3s ease, letter-spacing 0.3s ease',
               }}
             >
               {label}
