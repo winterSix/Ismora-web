@@ -3,6 +3,7 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { usePerfTier } from './perf';
 
 /* ============================================================
    HeroScene — the living backdrop of the hero panel.
@@ -37,11 +38,11 @@ const NOISE_GLSL = /* glsl */ `
 /* ── Terrain: a plane of points displaced by flowing fbm noise.
       Flat valley down the middle, ridges rising at the edges —
       the same composition as the old PNG, but alive. ── */
-function Terrain() {
+function Terrain({ segments }: { segments: [number, number] }) {
   const matRef = useRef<THREE.ShaderMaterial>(null!);
 
   const { geometry, material } = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(46, 28, 300, 185);
+    const geometry = new THREE.PlaneGeometry(46, 28, segments[0], segments[1]);
     const material = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -90,7 +91,7 @@ function Terrain() {
       `,
     });
     return { geometry, material };
-  }, []);
+  }, [segments]);
 
   useFrame((state, delta) => {
     matRef.current.uniforms.uTime.value += Math.min(delta, 1 / 30);
@@ -222,6 +223,22 @@ function CameraRig({ progressRef }: { progressRef: React.MutableRefObject<number
   return null;
 }
 
+/* Static stand-in shown to reduced-motion users — the same red-on-black
+   horizon mood as the live scene, but a plain gradient that costs nothing. */
+function StaticHero() {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background:
+          'radial-gradient(120% 80% at 50% 118%, rgba(232,32,28,0.45) 0%, rgba(120,8,10,0.18) 38%, rgba(0,0,0,0) 70%), #000',
+      }}
+    />
+  );
+}
+
 function HeroSceneImpl({ progress, active }: { progress: number; active: boolean }) {
   // useFrame consumers read the latest progress through a ref so scroll
   // re-renders don't churn the three.js tree.
@@ -230,21 +247,27 @@ function HeroSceneImpl({ progress, active }: { progress: number; active: boolean
     progressRef.current = progress;
   }, [progress]);
 
+  const tier = usePerfTier();
+
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000' }}>
-      <Canvas
-        frameloop={active ? 'always' : 'never'}
-        gl={{ alpha: false, antialias: true }}
-        camera={{ position: [0, 0.85, 6.2], fov: 50, near: 0.1, far: 80 }}
-        style={{ width: '100%', height: '100%' }}
-        dpr={[1, 1.75]}
-      >
-        <color attach="background" args={['#000000']} />
-        <NebulaSky />
-        <Terrain />
-        <Embers />
-        <CameraRig progressRef={progressRef} />
-      </Canvas>
+      {tier.reducedMotion ? (
+        <StaticHero />
+      ) : (
+        <Canvas
+          frameloop={active ? 'always' : 'never'}
+          gl={{ alpha: false, antialias: tier.antialias }}
+          camera={{ position: [0, 0.85, 6.2], fov: 50, near: 0.1, far: 80 }}
+          style={{ width: '100%', height: '100%' }}
+          dpr={tier.dpr}
+        >
+          <color attach="background" args={['#000000']} />
+          <NebulaSky />
+          <Terrain segments={tier.terrain} />
+          <Embers />
+          <CameraRig progressRef={progressRef} />
+        </Canvas>
+      )}
       {/* bottom fade so the terrain melts into the page's black base */}
       <div
         style={{

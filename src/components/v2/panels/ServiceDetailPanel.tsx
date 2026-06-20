@@ -58,17 +58,15 @@ export const SERVICE_DETAILS: ServiceDetail[] = [
 export function ServiceDetailPanel({
   detail,
   isVisible,
-  index = 0,
 }: {
   detail: ServiceDetail;
   isVisible: boolean;
   /** Unused — kept for API compatibility. */
   progress: number;
-  /** Position within SERVICE_DETAILS — drives the "01 / 04" kicker. */
+  /** Unused — the "01 / 04" kicker was removed; kept for API compatibility. */
   index?: number;
 }) {
   const { title, description, side } = detail;
-  const num = String(index + 1).padStart(2, '0');
 
   // Fixed horizontal anchors matched to the reference screens.
   const objCenterLeft = side === 'right' ? '78%' : '28%';
@@ -123,30 +121,6 @@ export function ServiceDetailPanel({
   return (
     <>
       {/* Black stage is handled by the fixed crossfading layer (base) */}
-
-      {/* Giant ghost numeral behind the 3D object */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: objCenterLeft,
-          transform: 'translate(-50%, -50%)',
-          fontFamily: 'var(--font-space-grotesk), sans-serif',
-          fontWeight: 700,
-          fontSize: 'clamp(220px, 30vw, 440px)',
-          lineHeight: 1,
-          color: 'transparent',
-          WebkitTextStroke: '1px rgba(255,255,255,0.08)',
-          zIndex: 2,
-          pointerEvents: 'none',
-          userSelect: 'none',
-          opacity: isVisible ? 1 : 0,
-          transition: 'opacity 0.6s ease',
-        }}
-      >
-        {num}
-      </div>
 
       {/* 3D object — full-height flex wrapper centres it vertically; left% fixes
           the horizontal anchor. The object is centred in its own canvas, so it
@@ -205,22 +179,6 @@ export function ServiceDetailPanel({
           willChange: 'transform, opacity',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontSize: 12,
-            letterSpacing: '0.28em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.55)',
-          }}
-        >
-          <span style={{ color: '#e8201c', fontWeight: 700 }}>{num}</span>
-          <span style={{ width: 28, height: 1, background: 'rgba(255,255,255,0.3)' }} />
-          <span>{String(SERVICE_DETAILS.length).padStart(2, '0')}</span>
-        </div>
         <h3
           ref={titleRef}
           style={{

@@ -1,11 +1,12 @@
 'use client';
 
-import { memo, useRef, Suspense } from 'react';
+import { memo, useRef, useState, Suspense } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Lightformer, Float } from '@react-three/drei';
+import { Environment, Lightformer } from '@react-three/drei';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
-import type { Mesh, Group } from 'three';
+import type { Mesh } from 'three';
+import { usePerfTier } from './perf';
 
 export type Shape3D = 'diamond' | 'gem' | 'cube' | 'orb' | 'structure' | 'swirl' | 'logo';
 
@@ -37,43 +38,31 @@ function getLogoGeometry(): THREE.ExtrudeGeometry {
   return geometry;
 }
 
-/* ── The rotating brand mark: deep ruby glass with an inner red glow. ── */
-function LogoMesh({ speed }: { speed: number }) {
-  const ref = useRef<Group>(null!);
-  const t = useRef(0);
-
-  useFrame((_, delta) => {
-    t.current += Math.min(delta, 1 / 30);
-    // Sway rather than spin: the extruded mark is a flat slab edge-on, so it
-    // oscillates ±32° around facing the camera — always readable as the logo,
-    // always catching new light.
-    ref.current.rotation.y = Math.sin(t.current * speed * 1.5) * 0.56;
-    ref.current.rotation.x = Math.sin(t.current * speed * 0.9) * 0.1 - 0.04;
-  });
-
+/* ── The brand mark: deep ruby glass with an inner red glow. Held perfectly
+      still — once it appears it never sways or drifts, on any panel. A small
+      fixed yaw/tilt keeps it reading as a 3D mark and catching the key light. ── */
+function LogoMesh() {
   return (
-    <Float speed={1.4} rotationIntensity={0.15} floatIntensity={0.35}>
-      <group ref={ref}>
-        <mesh geometry={getLogoGeometry()}>
-          <meshPhysicalMaterial
-            color="#c4060f"
-            metalness={0.1}
-            roughness={0.12}
-            transmission={0.4}
-            thickness={1.1}
-            ior={1.5}
-            attenuationColor="#ff3b2e"
-            attenuationDistance={1.1}
-            clearcoat={1}
-            clearcoatRoughness={0.06}
-            emissive="#e8201c"
-            emissiveIntensity={0.38}
-          />
-        </mesh>
-        {/* ember core lighting the glass from inside */}
-        <pointLight position={[0, 0, 1]} intensity={3} distance={4} color="#ff3b2e" />
-      </group>
-    </Float>
+    <group rotation={[-0.05, 0.2, 0]}>
+      <mesh geometry={getLogoGeometry()}>
+        <meshPhysicalMaterial
+          color="#c4060f"
+          metalness={0.1}
+          roughness={0.12}
+          transmission={0.4}
+          thickness={1.1}
+          ior={1.5}
+          attenuationColor="#ff3b2e"
+          attenuationDistance={1.1}
+          clearcoat={1}
+          clearcoatRoughness={0.06}
+          emissive="#e8201c"
+          emissiveIntensity={0.38}
+        />
+      </mesh>
+      {/* ember core lighting the glass from inside */}
+      <pointLight position={[0, 0, 1]} intensity={3} distance={4} color="#ff3b2e" />
+    </group>
   );
 }
 
@@ -194,17 +183,33 @@ function Object3DViewerImpl({
   const baseColor = color ?? (useCrystal ? '#ff8a80' : '#16161a');
   const emissiveColor = emissive ?? (useCrystal ? '#7a0a10' : '#c4000a');
 
+  const tier = usePerfTier();
+
+  // Lazy mount: each <Canvas> is its own WebGL context (env map, materials and
+  // framebuffers resident in VRAM). Building all of them up front is what makes
+  // the page lurch on weak GPUs and risks the browser's context limit. Instead
+  // we don't create the context until the panel is first reached, then keep it
+  // (re-creating on every scroll-back would cost an env-map rebuild). Until
+  // then the slot is just an empty, correctly-sized box. Latching during render
+  // mounts the canvas in the same paint the panel becomes active.
+  const [mounted, setMounted] = useState(active);
+  if (active && !mounted) setMounted(true);
+
+  if (!mounted) return <div style={{ width: size, height: size }} aria-hidden />;
+
+  const dpr: [number, number] = tier.level === 'low' ? [1, 1.25] : [1, 1.6];
+
   return (
     <div style={{ width: size, height: size }}>
       <Canvas
         frameloop={active ? 'always' : 'never'}
-        gl={{ alpha: true, antialias: true }}
+        gl={{ alpha: true, antialias: tier.antialias }}
         /* Camera dead-on so the object renders CENTRED in the canvas — this is
            what keeps each 3D vertically aligned with its panel text. The
            x-axis tumble in SpinningMesh supplies the lively 3/4 facet view. */
         camera={{ position: [0, 0, 3.4], fov: 44 }}
         style={{ width: '100%', height: '100%' }}
-        dpr={[1, 1.6]}
+        dpr={dpr}
       >
         <ambientLight intensity={0.35} />
         {/* Key light — front-top-right, crisp white speculars */}
@@ -219,7 +224,7 @@ function Object3DViewerImpl({
         <Suspense fallback={null}>
           <BrandEnvironment />
           {shape === 'logo' ? (
-            <LogoMesh speed={speed} />
+            <LogoMesh />
           ) : (
             <SpinningMesh
               shape={shape}

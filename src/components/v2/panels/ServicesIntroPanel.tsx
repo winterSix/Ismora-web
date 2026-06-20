@@ -7,6 +7,9 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 const CUBE_BASE = 230; // fixed canvas size — scaled via CSS, never resized per frame
 
+// The 3D Ismora mark is hidden for now. Flip to true to bring it back.
+const SHOW_LOGO = false;
+
 interface ServicesIntroPanelProps {
   isVisible: boolean;
   /** 0 → 1 scroll progress: flies the crystal cube top-centre → right-middle. */
@@ -27,22 +30,24 @@ export function ServicesIntroPanel({ isVisible, progress, active }: ServicesIntr
     <div ref={scope} style={{ display: 'contents' }}>
       {/* Radial red background is handled by the fixed crossfading layer */}
 
-      {/* Crystal cube — scroll-driven top-centre → right-middle */}
-      <div
-        style={{
-          position: 'absolute',
-          left: `${cubeLeft}%`,
-          top: `${cubeTop}%`,
-          width: CUBE_BASE,
-          height: CUBE_BASE,
-          transform: `translate(-50%, -50%) scale(${cubeScale})`,
-          zIndex: 5,
-          pointerEvents: 'none',
-          willChange: 'transform, left, top',
-        }}
-      >
-        <Object3DViewer shape="logo" size={CUBE_BASE} speed={0.5} active={active} />
-      </div>
+      {/* Ismora mark — hidden for now (SHOW_LOGO); scroll-driven top-centre → right-middle */}
+      {SHOW_LOGO && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${cubeLeft}%`,
+            top: `${cubeTop}%`,
+            width: CUBE_BASE,
+            height: CUBE_BASE,
+            transform: `translate(-50%, -50%) scale(${cubeScale})`,
+            zIndex: 5,
+            pointerEvents: 'none',
+            willChange: 'transform, left, top',
+          }}
+        >
+          <Object3DViewer shape="logo" size={CUBE_BASE} speed={0.5} active={active} />
+        </div>
+      )}
 
       {/* Centered headline */}
       <div

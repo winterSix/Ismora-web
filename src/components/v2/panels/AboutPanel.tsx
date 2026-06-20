@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
 import type { Shape3D } from '../Object3DViewer';
 import { useReveal } from '../useReveal';
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
+
+// The 3D Ismora mark is hidden for now. Flip to true to bring it back.
+// (Only the brand mark — the per-card 3D objects below are unaffected.)
+const SHOW_LOGO = false;
 
 // About paragraphs revealed word-by-word on scroll (grey → white).
 const P1_REST =
@@ -120,43 +123,58 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
 
   return (
     <>
-      {/* Beautiful rotating gem — behind the text, flies top → far-left */}
-      <div
-        style={{
-          position: 'absolute',
-          left: `${gemLeft}%`,
-          top: `${gemTop}%`,
-          width: GEM_BASE,
-          height: GEM_BASE,
-          transform: `translate(-50%, -50%) scale(${gemScale})`,
-          zIndex: 1,
-          pointerEvents: 'none',
-          willChange: 'transform, left, top',
-        }}
-      >
+      {/* Ismora mark + its glow — hidden for now (SHOW_LOGO); flies top → far-left */}
+      {SHOW_LOGO && (
         <div
-          aria-hidden
           style={{
             position: 'absolute',
-            inset: '-35%',
-            background:
-              'radial-gradient(circle, rgba(232,32,28,0.35) 0%, rgba(232,32,28,0.08) 45%, rgba(232,32,28,0) 70%)',
-            filter: 'blur(6px)',
-            zIndex: -1,
+            left: `${gemLeft}%`,
+            top: `${gemTop}%`,
+            width: GEM_BASE,
+            height: GEM_BASE,
+            transform: `translate(-50%, -50%) scale(${gemScale})`,
+            zIndex: 1,
+            pointerEvents: 'none',
+            willChange: 'transform, left, top',
           }}
-        />
-        <Object3DViewer shape="logo" size={GEM_BASE} speed={0.5} active={active} />
-      </div>
+        >
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: '-35%',
+              background:
+                'radial-gradient(circle, rgba(232,32,28,0.35) 0%, rgba(232,32,28,0.08) 45%, rgba(232,32,28,0) 70%)',
+              filter: 'blur(6px)',
+              zIndex: -1,
+            }}
+          />
+          <Object3DViewer shape="logo" size={GEM_BASE} speed={0.5} active={active} />
+        </div>
+      )}
 
-      {/* Clip + parallax content — fades in as the diamond rises, then the
-          cards parallax up over the second half of the scroll */}
-      <div ref={revealScope} style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 10, opacity: contentReveal }}>
+      {/* Clip + parallax content — vertically centred in the panel (the old top
+          band used to hold the brand mark, now hidden); cards parallax up over
+          the second half of the scroll only when the content overflows. */}
+      <div
+        ref={revealScope}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          zIndex: 10,
+          opacity: contentReveal,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}
+      >
         <div
           ref={innerRef}
           style={{
             display: 'flex',
             flexDirection: 'column',
-            paddingTop: 'clamp(150px,16vw,196px)',
+            paddingTop: 'clamp(40px,5vw,72px)',
             paddingRight: 'clamp(24px,5vw,80px)',
             paddingBottom: 'clamp(40px,5vw,72px)',
             paddingLeft: 'clamp(140px,14vw,220px)',
@@ -165,7 +183,7 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
             willChange: 'transform',
           }}
         >
-          {/* About heading + text */}
+          {/* About heading (centred) + intro text (left-aligned) */}
           <div
             data-reveal
             style={{
@@ -175,14 +193,7 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
               flexShrink: 0,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Image
-                src="/ismora-logo.svg"
-                alt=""
-                width={27}
-                height={24}
-                style={{ filter: 'brightness(0) invert(1)', width: 27, height: 24 }}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
               <span
                 style={{
                   fontFamily: 'var(--font-space-grotesk), sans-serif',

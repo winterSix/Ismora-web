@@ -9,6 +9,9 @@ interface HeroPanelProps {
 
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 
+// The 3D Ismora mark is hidden for now. Flip to true to bring it back.
+const SHOW_LOGO = false;
+
 export function HeroPanel({ progress, active }: HeroPanelProps) {
   // Staged scroll reveal, all pinned on this page:
   //  • progress 0.00–0.20  → living terrain only
@@ -61,22 +64,24 @@ export function HeroPanel({ progress, active }: HeroPanelProps) {
           We build the platforms African businesses depend on
         </h1>
 
-        {/* The Ismora mark in 3D — revealed by scroll, scales in centred,
-            then rotates continuously above the terrain */}
-        <div
-          style={{
-            width: 340,
-            height: 340,
-            opacity: reveal,
-            transform: `scale(${0.55 + 0.45 * reveal})`,
-            transformOrigin: 'center center',
-            transition: 'opacity 0.08s linear',
-            willChange: 'transform, opacity',
-            filter: 'drop-shadow(0 30px 80px rgba(232,32,28,0.35))',
-          }}
-        >
-          <Object3DViewer shape="logo" size={340} speed={0.5} active={active} />
-        </div>
+        {/* The Ismora mark in 3D — hidden for now (SHOW_LOGO). When restored it
+            is revealed by scroll and scales in centred above the terrain. */}
+        {SHOW_LOGO && (
+          <div
+            style={{
+              width: 340,
+              height: 340,
+              opacity: reveal,
+              transform: `scale(${0.55 + 0.45 * reveal})`,
+              transformOrigin: 'center center',
+              transition: 'opacity 0.08s linear',
+              willChange: 'transform, opacity',
+              filter: 'drop-shadow(0 30px 80px rgba(232,32,28,0.35))',
+            }}
+          >
+            <Object3DViewer shape="logo" size={340} speed={0.5} active={active} />
+          </div>
+        )}
       </div>
     </>
   );
