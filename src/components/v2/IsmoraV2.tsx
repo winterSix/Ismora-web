@@ -102,7 +102,7 @@ export function IsmoraV2() {
     // fire because the value and the transition flip in the same commit), and a
     // section is always fully opaque at rest. `zoom` sections turn this same eased
     // value into a camera push-in (see layer()).
-    let eased = SECTIONS.map((_, i) => (i === 0 ? 1 : 0));
+    let eased: number[] = SECTIONS.map((_, i) => (i === 0 ? 1 : 0));
 
     const update = (y: number, kFade: number) => {
       const { starts, reveals, maxScroll } = layoutRef.current;
