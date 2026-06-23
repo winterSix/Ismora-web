@@ -10,6 +10,8 @@ import { AboutPanel } from './panels/AboutPanel';
 import { ServicesIntroPanel } from './panels/ServicesIntroPanel';
 import { ServiceDetailPanel, SERVICE_DETAILS } from './panels/ServiceDetailPanel';
 import { OurWorksPanel, PROJECTS } from './panels/OurWorksPanel';
+import { MeetTheTeamPanel } from './panels/MeetTheTeamPanel';
+import { ContactPanel } from './panels/ContactPanel';
 
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 
@@ -19,20 +21,43 @@ const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 // one another. `zoom: true` marks a section whose entrance is a camera
 // push-in: the outgoing layer scales up toward the viewer as it dissolves
 // while this one grows into place.
+// `reveal` is how many viewport-heights of scroll a section occupies. Sections
+// whose content animates WITH the scroll (the hero reveals the diamond, About
+// scrolls its words, Services flies the cube) need a long range. The rest are
+// static — their content plays a one-shot entrance, then nothing changes — so
+// they get a short range (~0.8vh): a single scroll moves on to the next instead
+// of dragging through a screenful of "nothing happening".
 const SECTIONS: { key: string; reveal: number; zoom?: boolean }[] = [
   { key: 'hero', reveal: 2.8 },
   { key: 'about', reveal: 3.4 },
-  { key: 'services', reveal: 2.4 },
-  ...SERVICE_DETAILS.map((_, i) => ({ key: `d${i}`, reveal: 1.2, zoom: i === 0 })),
+  // Services intro is a one-shot title card (its scroll-driven cube is disabled
+  // via SHOW_LOGO), so it's effectively static — keep its scroll range short.
+  { key: 'services', reveal: 1.0 },
+  ...SERVICE_DETAILS.map((_, i) => ({ key: `d${i}`, reveal: 0.8, zoom: i === 0 })),
   // Our Works is ONE scroll-driven section (cards stack & flip within it)
   { key: 'works', reveal: 1.3 + 0.9 * Math.max(0, PROJECTS.length - 1) },
+  { key: 'team', reveal: 0.8 },
+  { key: 'contact', reveal: 0.9 },
 ];
 const DETAIL_START = 3;
 const OURWORKS_START = DETAIL_START + SERVICE_DETAILS.length;
+const TEAM_START = OURWORKS_START + 1;
+const CONTACT_START = TEAM_START + 1;
 
-// Section index → sidebar item (0 Intro, 1 About, 2 Services, 3 Our Works)
+// Section index → sidebar item
+// (0 Intro, 1 About, 2 Services, 3 Our Works, 4 Meet the Team, 5 Contact)
 const sidebarFor = (i: number) =>
-  i === 0 ? 0 : i === 1 ? 1 : i < OURWORKS_START ? 2 : 3;
+  i === 0
+    ? 0
+    : i === 1
+      ? 1
+      : i < OURWORKS_START
+        ? 2
+        : i === OURWORKS_START
+          ? 3
+          : i === TEAM_START
+            ? 4
+            : 5;
 // Sections crossfade at their boundaries: the incoming layer (stacked above)
 // fades in over the outgoing one during the final stretch of its scroll
 // range, then the outgoing layer switches off once fully covered.
@@ -70,89 +95,67 @@ export function IsmoraV2() {
   }, []);
 
   useEffect(() => {
-    // Crossfade targets: over the last FADE px of a section's range, the next
-    // section (always stacked above it) wants opacity 1 — outgoing scene
-    // dissolves into the incoming one. The moment the incoming layer is fully
-    // opaque, the one beneath switches off.
-    const opTargets = (y: number) => {
-      const { starts, reveals, vh } = layoutRef.current;
-      const FADE = vh * 0.45;
-      const last = SECTIONS.length - 1;
-      return SECTIONS.map((_, i) => {
-        const s = starts[i];
-        const end = s + reveals[i];
-        if (i !== last && y >= end) return 0; // the layer above covers it
-        if (i === 0) return 1; // the landing layer needs no fade-in
-        return clamp((y - (s - FADE)) / FADE);
-      });
-    };
+    // Per-section displayed opacity. Only the ACTIVE section eases up (0→1, a
+    // fade-in from the black backdrop); every other section is cut to 0 instantly.
+    // So at most one section's content is ever on screen (no bleed-through), the
+    // fade-in reliably animates (driven here in JS — a CSS transition wouldn't
+    // fire because the value and the transition flip in the same commit), and a
+    // section is always fully opaque at rest. `zoom` sections turn this same eased
+    // value into a camera push-in (see layer()).
+    let eased = SECTIONS.map((_, i) => (i === 0 ? 1 : 0));
 
-    const update = (y: number, dispOp: number[]) => {
+    const update = (y: number, kFade: number) => {
       const { starts, reveals, maxScroll } = layoutRef.current;
-      if (!starts.length) return;
+      if (!starts.length) return true;
 
-      setOp(dispOp);
-      setProg(SECTIONS.map((_, i) => clamp((y - starts[i]) / reveals[i])));
-
-      setVisited((prev) => {
-        let next = prev;
-        dispOp.forEach((o, i) => {
-          // fire one-shot entrances only once the layer is mostly faded in
-          if (o > 0.55 && !prev.has(i)) {
-            if (next === prev) next = new Set(prev);
-            next.add(i);
-          }
-        });
-        return next;
-      });
-
-      // Current section → sidebar index (hero=0, about=1, services+details=2).
+      // Active section = the topmost one whose start the scroll has reached.
+      // (2px tolerance: starts are fractional pixels but scrollY rounds to whole,
+      // so a smooth-scroll to a section can settle a fraction short of its start.)
       let cur = 0;
       for (let i = 0; i < starts.length; i++) {
-        if (y >= starts[i]) cur = i;
+        if (y >= starts[i] - 2) cur = i;
       }
+
+      let fadeDone = true;
+      eased = SECTIONS.map((_, i) => {
+        if (i !== cur) return 0; // instant cut — the outgoing layer never lingers
+        const v = eased[i] + (1 - eased[i]) * kFade;
+        if (v < 0.999) fadeDone = false;
+        return v > 0.999 ? 1 : v;
+      });
+
+      setOp(eased);
+      setProg(SECTIONS.map((_, i) => clamp((y - starts[i]) / reveals[i])));
+      setVisited((prev) => (prev.has(cur) ? prev : new Set(prev).add(cur)));
       setActiveSection(sidebarFor(cur));
       setAtEnd(y >= maxScroll - 8);
+      return fadeDone;
     };
 
-    // Two layers of smoothing, both framerate-driven:
-    //  • smooth — the lerped scroll position; gives all progress-driven motion
-    //    inertia instead of stepping with the wheel.
-    //  • dispOp — displayed layer opacities chasing their scroll-derived
-    //    targets with a slower time constant, so a boundary dissolve always
-    //    plays out over ~400ms even when the boundary is crossed in one flick
-    //    (in either scroll direction). The rAF loop runs until BOTH converge.
+    // Smooth the raw scroll position so progress-driven motion inside panels has
+    // inertia instead of stepping with the wheel.
     let raf = 0;
     let smooth = window.scrollY;
     let lastT = 0;
-    // assigned for real below, once computeLayout() has filled layoutRef
-    let dispOp: number[] = [];
     const tick = () => {
       tickingRef.current = true;
-      // Framerate-independent smoothing: convergence rates are per-second,
-      // so dissolves take the same wall-time at 30fps as at 120fps.
+      // Framerate-independent smoothing: rates are per-second, so motion takes the
+      // same wall-time at 30fps as at 120fps.
       const now = performance.now();
       const dt = Math.min((now - lastT) / 1000, 0.1);
       lastT = now;
       const kScroll = 1 - Math.exp(-8.5 * dt);
-      const kOp = 1 - Math.exp(-5.5 * dt);
+      const kFade = 1 - Math.exp(-7 * dt); // ~0.45s fade-in / push-in
 
       const target = window.scrollY;
       const diff = target - smooth;
       const scrollDone = Math.abs(diff) < 0.1;
       smooth = scrollDone ? target : smooth + diff * kScroll;
 
-      let opDone = true;
-      const targets = opTargets(smooth);
-      dispOp = dispOp.map((o, i) => {
-        const t = targets[i];
-        if (Math.abs(t - o) < 0.004) return t;
-        opDone = false;
-        return o + (t - o) * kOp;
-      });
-
-      update(smooth, dispOp);
-      if (scrollDone && opDone) {
+      const fadeDone = update(smooth, kFade);
+      // Keep ticking until the scroll has settled AND the active layer has fully
+      // faded in, so the entrance still completes after the scroll stops.
+      if (scrollDone && fadeDone) {
         tickingRef.current = false;
         return;
       }
@@ -169,8 +172,7 @@ export function IsmoraV2() {
     };
 
     computeLayout();
-    dispOp = opTargets(smooth);
-    update(smooth, dispOp);
+    update(smooth, 1); // initial state set instantly (no fade on first paint)
     window.addEventListener('scroll', kick, { passive: true });
     window.addEventListener('resize', onResize);
     return () => {
@@ -183,20 +185,44 @@ export function IsmoraV2() {
   const navigateToSection = useCallback((sidebarIndex: number) => {
     const { starts } = layoutRef.current;
     const sectionIndex =
-      sidebarIndex === 0 ? 0 : sidebarIndex === 1 ? 1 : sidebarIndex === 2 ? 2 : OURWORKS_START;
+      sidebarIndex === 0
+        ? 0
+        : sidebarIndex === 1
+          ? 1
+          : sidebarIndex === 2
+            ? 2
+            : sidebarIndex === 3
+              ? OURWORKS_START
+              : sidebarIndex === 4
+                ? TEAM_START
+                : CONTACT_START;
     window.scrollTo({ top: starts[sectionIndex] ?? 0, behavior: 'smooth' });
   }, []);
 
   // Renders one stacked full-screen section layer (background + content).
+  // op[i] is driven per-frame in JS (see update): the active section eases 0→1,
+  // every other section is 0. So the incoming section fades up from the black
+  // backdrop while the outgoing is cut instantly — two pages are never both
+  // visible, yet the entrance still animates and the resting section is fully
+  // opaque. `zoom` sections (the first service detail) turn the same eased value
+  // into a "camera push-in": they scale up from notably smaller as they fade in,
+  // restoring the original entrance you get scrolling down from the Services intro.
   const layer = (i: number, bg: ReactNode, content: ReactNode) => {
-    // Zoom-in fade-out at `zoom` boundaries, driven by the same time-smoothed
-    // opacity so it eases and reverses with the dissolve:
-    //  • the OUTGOING layer zooms toward the viewer while its own opacity
-    //    burns out to the black backdrop (not merely being covered)
-    //  • the incoming zoom section grows from slightly small into full size
-    const zoomAbove = i + 1 < SECTIONS.length && SECTIONS[i + 1].zoom ? op[i + 1] : 0;
-    const selfScale = SECTIONS[i].zoom ? 0.94 + 0.06 * op[i] : 1;
-    const scale = (1 + 0.35 * zoomAbove) * selfScale;
+    const shown = op[i] > 0.001;
+    const zoomIn = SECTIONS[i].zoom;
+    // `zoom` sections (first service detail) push in: content grows 0.84→1 on
+    // entry. Capped at 1 (no overscan) so content is never cropped.
+    const contentScale = zoomIn ? 0.84 + 0.16 * op[i] : 1;
+    // Scroll-linked parallax so motion tracks the wheel instead of feeling like
+    // "scrolling the air" on the otherwise-pinned layers. `prog` is the smoothed
+    // 0→1 scroll position through this section, so the drift eases.
+    //   • The BACKGROUND drifts the most and is overscanned — it's decorative, so
+    //     the slight crop the overscan causes is invisible.
+    //   • The CONTENT drifts only a little and is NEVER overscanned, so nothing
+    //     edge-anchored (e.g. the Contact footer) is ever clipped.
+    const p = prog[i] ?? 0;
+    const bgDrift = (0.5 - p) * 6.4; // ±3.2% of viewport
+    const contentDrift = (0.5 - p) * 2.4; // ±1.2% of viewport
     return (
       <div
         key={SECTIONS[i].key}
@@ -204,53 +230,75 @@ export function IsmoraV2() {
           position: 'fixed',
           inset: 0,
           zIndex: 1 + i,
-          opacity: op[i] * (1 - zoomAbove),
-          transform: scale === 1 ? undefined : `scale(${scale})`,
-          transformOrigin: '50% 50%',
-          visibility: op[i] * (1 - zoomAbove) <= 0.001 ? 'hidden' : 'visible',
+          opacity: op[i],
+          visibility: shown ? 'visible' : 'hidden',
           pointerEvents: op[i] > 0.5 ? 'auto' : 'none',
-          willChange: 'opacity, transform',
+          willChange: 'opacity',
         }}
       >
-        {bg}
-        {content}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            transform: `translate3d(0, ${bgDrift}%, 0) scale(1.085)`,
+            transformOrigin: '50% 50%',
+            willChange: 'transform',
+          }}
+        >
+          {bg}
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            transform: `translate3d(0, ${contentDrift}%, 0) scale(${contentScale})`,
+            transformOrigin: '50% 50%',
+            willChange: 'transform',
+          }}
+        >
+          {content}
+        </div>
       </div>
     );
   };
 
   return (
     <>
-      {/* Fixed Logo */}
+      {/* Fixed Logo. ismora-mark.svg is tightly cropped to the mark's ink, so
+          the image box equals the visible mark — its left edge aligns with the
+          sidebar's vertical line (x≈49) and its height is matched to the
+          wordmark's cap height so the two read at the same size. */}
       <div
         style={{
           position: 'fixed',
           top: 50,
-          left: 50,
+          left: 49,
           zIndex: 200,
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
+          gap: 8,
           pointerEvents: 'none',
         }}
       >
         <Image
-          src="/ismora-logo.svg"
+          src="/ismora-mark.svg"
           alt="Ismora"
-          width={72}
-          height={64}
-          style={{ filter: 'brightness(0) invert(1)', width: 72, height: 64 }}
+          width={22}
+          height={22}
+          style={{ filter: 'brightness(0) invert(1)', width: 22, height: 22 }}
           priority
         />
         <span
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
             fontWeight: 500,
-            fontSize: 40,
+            fontSize: 30,
             color: '#ffffff',
             letterSpacing: '-0.02em',
           }}
         >
-          ismora™
+          ısmora
         </span>
       </div>
 
@@ -328,6 +376,20 @@ export function IsmoraV2() {
           />
         </div>,
         <OurWorksPanel projects={PROJECTS} progress={prog[OURWORKS_START]} isVisible={op[OURWORKS_START] > 0.5} />
+      )}
+
+      {/* Meet the Team */}
+      {layer(
+        TEAM_START,
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000' }} />,
+        <MeetTheTeamPanel isVisible={op[TEAM_START] > 0.5} />
+      )}
+
+      {/* Let's Connect / Contact */}
+      {layer(
+        CONTACT_START,
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000' }} />,
+        <ContactPanel isVisible={op[CONTACT_START] > 0.5} />
       )}
 
       {/* Cinematic finish: vignette + animated film grain over everything */}

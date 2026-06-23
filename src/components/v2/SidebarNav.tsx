@@ -60,7 +60,7 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
 
       {SECTIONS.map((label, i) => {
         const isActive = i === activeSection;
-        const isDisabled = i > 3;
+        const isDisabled = i > 5;
         return (
           <button
             key={label}
