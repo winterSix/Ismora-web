@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { SidebarNav } from './SidebarNav';
@@ -9,7 +9,7 @@ import { HeroPanel } from './panels/HeroPanel';
 import { AboutPanel } from './panels/AboutPanel';
 import { ServicesIntroPanel } from './panels/ServicesIntroPanel';
 import { ServiceDetailPanel, SERVICE_DETAILS } from './panels/ServiceDetailPanel';
-import { OurWorksPanel, PROJECTS } from './panels/OurWorksPanel';
+import { OurWorksPanel, PROJECTS, type Project } from './panels/OurWorksPanel';
 import { MeetTheTeamPanel } from './panels/MeetTheTeamPanel';
 import { ContactPanel } from './panels/ContactPanel';
 
@@ -27,18 +27,6 @@ const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 // static — their content plays a one-shot entrance, then nothing changes — so
 // they get a short range (~0.8vh): a single scroll moves on to the next instead
 // of dragging through a screenful of "nothing happening".
-const SECTIONS: { key: string; reveal: number; zoom?: boolean }[] = [
-  { key: 'hero', reveal: 2.8 },
-  { key: 'about', reveal: 3.4 },
-  // Services intro is a one-shot title card (its scroll-driven cube is disabled
-  // via SHOW_LOGO), so it's effectively static — keep its scroll range short.
-  { key: 'services', reveal: 1.0 },
-  ...SERVICE_DETAILS.map((_, i) => ({ key: `d${i}`, reveal: 0.8, zoom: i === 0 })),
-  // Our Works is ONE scroll-driven section (cards stack & flip within it)
-  { key: 'works', reveal: 1.3 + 0.9 * Math.max(0, PROJECTS.length - 1) },
-  { key: 'team', reveal: 0.8 },
-  { key: 'contact', reveal: 0.9 },
-];
 const DETAIL_START = 3;
 const OURWORKS_START = DETAIL_START + SERVICE_DETAILS.length;
 const TEAM_START = OURWORKS_START + 1;
@@ -62,7 +50,27 @@ const sidebarFor = (i: number) =>
 // fades in over the outgoing one during the final stretch of its scroll
 // range, then the outgoing layer switches off once fully covered.
 
-export function IsmoraV2() {
+export function IsmoraV2({ projects = PROJECTS }: { projects?: Project[] } = {}) {
+  // 'works' is the only section whose scroll range depends on runtime data (the
+  // number of Work items fetched from the API), so SECTIONS is built here
+  // instead of at module scope — everything else about it is static.
+  const SECTIONS = useMemo<{ key: string; reveal: number; zoom?: boolean }[]>(
+    () => [
+      { key: 'hero', reveal: 2.8 },
+      { key: 'about', reveal: 3.4 },
+      // Services intro is a one-shot title card (its scroll-driven cube is
+      // disabled via SHOW_LOGO), so it's effectively static — keep its scroll
+      // range short.
+      { key: 'services', reveal: 1.0 },
+      ...SERVICE_DETAILS.map((_, i) => ({ key: `d${i}`, reveal: 0.8, zoom: i === 0 })),
+      // Our Works is ONE scroll-driven section (cards stack & flip within it)
+      { key: 'works', reveal: 1.3 + 0.9 * Math.max(0, projects.length - 1) },
+      { key: 'team', reveal: 0.8 },
+      { key: 'contact', reveal: 0.9 },
+    ],
+    [projects.length]
+  );
+
   const [activeSection, setActiveSection] = useState(0);
   const [docH, setDocH] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
@@ -77,6 +85,8 @@ export function IsmoraV2() {
     maxScroll: 1,
   });
   const tickingRef = useRef(false);
+  // Last width the layout was computed for — see onResize below.
+  const lastWidthRef = useRef(0);
 
   // Recompute the scroll layout for the current viewport height.
   const computeLayout = useCallback(() => {
@@ -91,8 +101,9 @@ export function IsmoraV2() {
     const last = reveals.length - 1;
     const maxScroll = starts[last] + reveals[last];
     layoutRef.current = { starts, reveals, vh, maxScroll };
+    lastWidthRef.current = window.innerWidth;
     setDocH(maxScroll + vh);
-  }, []);
+  }, [SECTIONS]);
 
   useEffect(() => {
     // Per-section displayed opacity. Only the ACTIVE section eases up (0→1, a
@@ -167,6 +178,15 @@ export function IsmoraV2() {
       raf = requestAnimationFrame(tick);
     };
     const onResize = () => {
+      // Mobile browsers fire `resize` as the address bar collapses/expands
+      // WHILE the page is being scrolled (innerHeight changes, nothing else
+      // does). Recomputing the section boundaries on every one of those
+      // shifts them under a scroll position that hasn't actually moved, which
+      // can flip the "active section" backward for a frame and fade it back
+      // in — a visible flicker. A genuine resize (orientation change, window
+      // drag, real device rotation) always changes the width too, so gate on
+      // that instead of reacting to every height-only tick.
+      if (window.innerWidth === lastWidthRef.current) return;
       computeLayout();
       kick();
     };
@@ -269,37 +289,16 @@ export function IsmoraV2() {
           the image box equals the visible mark — its left edge aligns with the
           sidebar's vertical line (x≈49) and its height is matched to the
           wordmark's cap height so the two read at the same size. */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 50,
-          left: 49,
-          zIndex: 200,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          pointerEvents: 'none',
-        }}
-      >
+      <div className="brand-logo">
         <Image
           src="/ismora-mark.svg"
           alt="Ismora"
           width={22}
           height={22}
-          style={{ filter: 'brightness(0) invert(1)', width: 22, height: 22 }}
+          className="brand-mark"
           priority
         />
-        <span
-          style={{
-            fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontWeight: 500,
-            fontSize: 30,
-            color: '#ffffff',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          ısmora
-        </span>
+        <span className="brand-word">ısmora</span>
       </div>
 
       {/* Fixed Sidebar Nav */}
@@ -340,7 +339,7 @@ export function IsmoraV2() {
       {layer(
         2,
         <div aria-hidden style={{ position: 'absolute', inset: 0 }}>
-          <Image src="/images/radial-red-bg.png" alt="" fill style={{ objectFit: 'cover', objectPosition: 'center' }} />
+          <Image src="/images/radial-red-bg.png" alt="" fill className="services-bg-image" />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)' }} />
         </div>,
         <ServicesIntroPanel progress={prog[2]} isVisible={visited.has(2)} active={op[2] > 0.5} />
@@ -375,7 +374,7 @@ export function IsmoraV2() {
             }}
           />
         </div>,
-        <OurWorksPanel projects={PROJECTS} progress={prog[OURWORKS_START]} isVisible={op[OURWORKS_START] > 0.5} />
+        <OurWorksPanel projects={projects} progress={prog[OURWORKS_START]} isVisible={op[OURWORKS_START] > 0.5} />
       )}
 
       {/* Meet the Team */}
@@ -411,34 +410,13 @@ export function IsmoraV2() {
       {/* Persistent "Scroll to Discover" */}
       <div
         aria-hidden
+        className="scroll-hint"
         style={{
-          position: 'fixed',
-          bottom: 40,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 150,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 10,
           opacity: atEnd ? 0 : 1,
           transition: 'opacity 0.5s ease',
-          pointerEvents: 'none',
         }}
       >
-        <span
-          style={{
-            fontFamily: 'var(--font-space-grotesk), sans-serif',
-            fontWeight: 400,
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.85)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.32em',
-            textShadow: '0 1px 6px rgba(0,0,0,0.5)',
-          }}
-        >
-          Scroll to Discover
-        </span>
+        <span className="scroll-hint-label">Scroll to Discover</span>
         <span className="scroll-line" />
       </div>
     </>
