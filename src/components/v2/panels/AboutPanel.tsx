@@ -153,9 +153,11 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
         </div>
       )}
 
-      {/* Clip + parallax content — vertically centred in the panel (the old top
-          band used to hold the brand mark, now hidden); cards parallax up over
-          the second half of the scroll only when the content overflows. */}
+      {/* Clip + parallax content — top-aligned so the heading is always the
+          first thing on screen (centring here would clip it off-screen once
+          content is taller than the viewport, e.g. the stacked mobile cards);
+          cards parallax up over the second half of the scroll only when the
+          content overflows. */}
       <div
         ref={revealScope}
         style={{
@@ -166,18 +168,15 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
           opacity: contentReveal,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
         }}
       >
         <div
           ref={innerRef}
+          className="about-content"
           style={{
             display: 'flex',
             flexDirection: 'column',
-            paddingTop: 'clamp(40px,5vw,72px)',
-            paddingRight: 'clamp(24px,5vw,80px)',
-            paddingBottom: 'clamp(40px,5vw,72px)',
-            paddingLeft: 'clamp(140px,14vw,220px)',
             gap: 30,
             transform: `translateY(${-contentScroll * overflow}px)`,
             willChange: 'transform',
@@ -240,11 +239,11 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
             </div>
           </div>
 
-          {/* Service cards */}
+          {/* Service cards — stack vertically once the rail-width grid gets too tight to read */}
           <div
+            className="about-cards"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 24,
               flexShrink: 0,
             }}

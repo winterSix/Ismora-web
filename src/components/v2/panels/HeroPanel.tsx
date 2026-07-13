@@ -44,7 +44,7 @@ export function HeroPanel({ progress, active }: HeroPanelProps) {
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
             fontWeight: 500,
-            fontSize: 'clamp(1.9rem, 4.2vw, 58px)',
+            fontSize: 'clamp(1.45rem, 4.2vw, 58px)',
             lineHeight: 1.08,
             letterSpacing: '-0.045em',
             textAlign: 'center',

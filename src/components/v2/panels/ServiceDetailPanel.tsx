@@ -5,6 +5,8 @@ import gsap from 'gsap';
 import { Object3DViewer } from '../Object3DViewer';
 import type { Shape3D } from '../Object3DViewer';
 import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect';
+import { useReveal } from '../useReveal';
+import { useIsMobile } from '../useIsMobile';
 
 export interface ServiceDetail {
   title: string;
@@ -67,6 +69,7 @@ export function ServiceDetailPanel({
   index?: number;
 }) {
   const { title, description, side } = detail;
+  const isMobile = useIsMobile();
 
   // Fixed horizontal anchors matched to the reference screens.
   const objCenterLeft = side === 'right' ? '78%' : '28%';
@@ -76,6 +79,8 @@ export function ServiceDetailPanel({
   // becomes active, the diamond and text start on each other's side and slide to
   // their final anchors, with the title + description staggering in. A single
   // scroll always completes the exchange — you never get parked in the overlap.
+  // Desktop only — the mobile stack below plays a simpler fade/rise instead,
+  // since there's no "other side" to cross-slide from once it's a single column.
   const sign = side === 'right' ? 1 : -1;
   const SWAP = 44; // vw start offset (on the opposite side)
 
@@ -86,7 +91,7 @@ export function ServiceDetailPanel({
   const played = useRef(false);
 
   useIsomorphicLayoutEffect(() => {
-    if (!isVisible || played.current || !objRef.current) return;
+    if (isMobile || !isVisible || played.current || !objRef.current) return;
     played.current = true;
 
     const off = (window.innerWidth * SWAP) / 100; // vw → px
@@ -116,7 +121,32 @@ export function ServiceDetailPanel({
     });
 
     return () => ctx.revert();
-  }, [isVisible]);
+  }, [isVisible, isMobile]);
+
+  // Mobile: text first, then the 3D shape below it — a plain top-to-bottom
+  // stack reusing the same [data-reveal] fade/rise pattern as the other panels.
+  const mobileScope = useReveal<HTMLDivElement>(isMobile && isVisible, { y: 26, stagger: 0.14 });
+
+  if (isMobile) {
+    return (
+      <div ref={mobileScope} className="detail-mobile-stack" style={{ opacity: isVisible ? 1 : 0 }}>
+        <div data-reveal className="detail-mobile-text">
+          <h3 className="detail-title">{title}</h3>
+          <p className="detail-desc">{description}</p>
+        </div>
+        <div data-reveal className="detail-mobile-object">
+          <Object3DViewer
+            shape={detail.shape}
+            color={detail.color}
+            emissive={detail.emissive}
+            size={230}
+            speed={0.55}
+            active={isVisible}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

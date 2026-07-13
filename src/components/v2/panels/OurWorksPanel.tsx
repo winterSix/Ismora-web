@@ -78,31 +78,22 @@ export function OurWorksPanel({
   return (
     <div
       ref={revealScope}
+      className="ourworks-content"
       style={{
         position: 'absolute',
         inset: 0,
         zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 'clamp(82px,9vw,116px)',
-        paddingBottom: 'clamp(40px,5vw,72px)',
-        paddingLeft: 'clamp(150px,14vw,210px)',
-        paddingRight: 'clamp(40px,5vw,80px)',
-        gap: 'clamp(12px,1.6vw,22px)',
       }}
     >
-      {/* Heading */}
+      {/* Heading — left-aligned on desktop (matches the reference), centred on
+          mobile (no sidebar rail eating the left edge there). */}
       <div
         data-reveal
+        className="ourworks-heading"
         style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}
       >
-        <Image
-          src="/ismora-logo.svg"
-          alt=""
-          width={27}
-          height={24}
-          style={{ filter: 'brightness(0) invert(1)', width: 27, height: 24 }}
-        />
         <span
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
@@ -168,9 +159,8 @@ function WorkCard({ project }: { project: Project }) {
     >
       {/* Brand preview */}
       <div
+        className="work-preview"
         style={{
-          flex: 1,
-          minHeight: 110,
           borderRadius: 16,
           background: `radial-gradient(90% 140% at 75% 0%, ${project.accent}2e 0%, rgba(0,0,0,0) 55%), radial-gradient(70% 110% at 20% 100%, ${project.accent}1f 0%, rgba(0,0,0,0) 60%), linear-gradient(135deg, ${project.color}, ${project.color}b8)`,
           border: '1px solid rgba(255,255,255,0.06)',
@@ -242,14 +232,15 @@ function WorkCard({ project }: { project: Project }) {
         )}
       </div>
 
-      {/* Metadata row (inside the card) */}
+      {/* Metadata row (inside the card) — 4 columns on desktop, stacked
+          vertically on mobile with its own scroll so a long description can
+          never get silently clipped by the card's rounded-corner overflow. */}
       <div
+        className="work-meta"
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 2fr 1fr 1fr',
           gap: 24,
           padding: '2px clamp(8px,1vw,16px) 6px',
-          flexShrink: 0,
         }}
       >
         {[

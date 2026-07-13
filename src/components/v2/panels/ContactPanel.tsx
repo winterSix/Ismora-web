@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
+import { useIsMobile } from '../useIsMobile';
 
 const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-space-grotesk), sans-serif',
@@ -33,27 +33,23 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function ContactPanel({ isVisible }: { isVisible: boolean }) {
   const anim = isVisible ? 'animate-fade-slide-up' : '';
+  const isMobile = useIsMobile();
   return (
     <div
+      className="contact-content"
       style={{
         position: 'absolute',
         inset: 0,
         zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 'clamp(78px,8vw,108px)',
-        paddingBottom: 'clamp(20px,2.5vw,34px)',
-        paddingLeft: 'clamp(150px,14vw,210px)',
-        paddingRight: 'clamp(40px,5vw,80px)',
-        gap: 'clamp(16px,2.2vw,30px)',
       }}
     >
-      {/* Heading */}
+      {/* Heading — centred on mobile, left-aligned on desktop */}
       <div
-        className={anim}
+        className={`contact-heading${anim ? ` ${anim}` : ''}`}
         style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: isVisible ? undefined : 0, flexShrink: 0 }}
       >
-        <Image src="/ismora-logo.svg" alt="" width={27} height={24} style={{ filter: 'brightness(0) invert(1)' }} />
         <span
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
@@ -67,13 +63,13 @@ export function ContactPanel({ isVisible }: { isVisible: boolean }) {
         </span>
       </div>
 
-      {/* Form + diamond */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 'clamp(24px,4vw,64px)', minHeight: 0 }}>
+      {/* Form + diamond — the diamond is a two-column-layout flourish, dropped
+          on mobile (single column, no 3D) rather than shrunk, per direction. */}
+      <div className="contact-row">
         <form
-          className={anim}
+          className={`contact-form${anim ? ` ${anim}` : ''}`}
           onSubmit={(e) => e.preventDefault()}
           style={{
-            flex: '0 0 clamp(300px,42vw,540px)',
             display: 'flex',
             flexDirection: 'column',
             gap: 16,
@@ -86,7 +82,7 @@ export function ContactPanel({ isVisible }: { isVisible: boolean }) {
           <Field label="Full Name">
             <input style={inputStyle} type="text" placeholder="Enter your full name" />
           </Field>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="contact-form-grid">
             <Field label="Phone Number">
               <input style={inputStyle} type="tel" placeholder="0800 000 0000" />
             </Field>
@@ -102,15 +98,18 @@ export function ContactPanel({ isVisible }: { isVisible: boolean }) {
           </button>
         </form>
 
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
-          <div style={{ width: 'clamp(200px,24vw,360px)', height: 'clamp(200px,24vw,360px)' }}>
-            <Object3DViewer shape="diamond" size={360} speed={0.55} />
+        {!isMobile && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
+            <div style={{ width: 'clamp(200px,24vw,360px)', height: 'clamp(200px,24vw,360px)' }}>
+              <Object3DViewer shape="diamond" size={360} speed={0.55} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Footer */}
       <div
+        className="contact-footer"
         style={{
           display: 'flex',
           justifyContent: 'space-between',

@@ -365,3 +365,316 @@ button { font: inherit; cursor: pointer; }
 
 /* Sidebar labels brighten on hover */
 .sidebar-item:hover .sidebar-label { color: #ffffff !important; }
+
+/* ── Responsive chrome (fixed logo / sidebar nav / scroll hint) ──────────────
+   These sit on every page as fixed-position overlays, so getting them right
+   here fixes the layout everywhere at once. Below 860px the mid-screen
+   labelled rail would sit under centred page headlines, so it becomes a
+   hamburger-triggered drawer instead: the brand logo moves into a top bar in
+   line with the hamburger button, and the section list slides in from the
+   right as a full menu (dot + label, same as desktop) when toggled. */
+.brand-logo {
+  position: fixed;
+  top: 50px;
+  left: 49px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.brand-mark { filter: brightness(0) invert(1); width: 22px; height: 22px; }
+.brand-word {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 500;
+  font-size: 30px;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-nav {
+  left: 46px;
+  top: 50%;
+  transform: translateY(-50%);
+  gap: 50px;
+  z-index: 100;
+}
+.sidebar-item { padding: 0; }
+.nav-line { position: absolute; left: 3px; top: -24px; bottom: -24px; width: 1px; }
+
+.scroll-hint {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.scroll-hint-label {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 400;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Hamburger toggle — hidden on desktop, where the rail is always visible */
+.nav-hamburger {
+  display: none;
+  position: fixed;
+  top: 34px;
+  right: 26px;
+  z-index: 220;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-hamburger span {
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: #ffffff;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.nav-hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.nav-hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+.nav-backdrop { display: none; }
+
+@media (max-width: 860px) {
+  .brand-logo { top: 24px; left: 24px; gap: 7px; }
+  .brand-mark { width: 18px; height: 18px; }
+  .brand-word { font-size: 20px; }
+
+  .nav-hamburger { display: flex; top: 22px; right: 24px; }
+
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 195;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+  .nav-backdrop-open { opacity: 1; pointer-events: auto; }
+
+  /* The rail becomes a right-hand drawer: off-screen until the hamburger
+     opens it, full labels shown (there's room — it's a menu, not a rail). */
+  .sidebar-nav {
+    top: 0;
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+    height: 100dvh;
+    width: min(78vw, 320px);
+    justify-content: center;
+    gap: 34px;
+    padding: 32px 40px;
+    background: rgba(9, 9, 11, 0.96);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -24px 0 60px rgba(0, 0, 0, 0.45);
+    z-index: 200;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sidebar-nav-open { transform: translateX(0); }
+  .nav-line { display: none; }
+  .sidebar-item { padding: 6px 0; }
+  .nav-label { font-size: 13px !important; }
+
+  .scroll-hint { bottom: 26px; gap: 8px; }
+}
+
+@media (max-width: 480px) {
+  .brand-logo { top: 20px; left: 18px; gap: 6px; }
+  .brand-mark { width: 16px; height: 16px; }
+  .brand-word { font-size: 18px; }
+
+  .nav-hamburger { top: 18px; right: 18px; width: 36px; height: 36px; }
+
+  .sidebar-nav { width: min(82vw, 300px); padding: 28px 30px; }
+
+  .scroll-hint { bottom: 20px; }
+  .scroll-hint-label { font-size: 9px; letter-spacing: 0.22em; }
+  .scroll-line { height: 30px; }
+}
+
+/* ── About Us panel ───────────────────────────────────────────────────────
+   Desktop reserves a wide left inset for the always-visible labelled rail.
+   Below 860px that rail is a hamburger drawer instead (nothing pinned to the
+   left edge), so the reserved inset collapses to match the right padding —
+   the heading centres on the actual viewport instead of an off-centre box,
+   and the three service cards stack vertically instead of a cramped grid. */
+.about-content {
+  padding-top: clamp(40px, 5vw, 72px);
+  padding-right: clamp(24px, 5vw, 80px);
+  padding-bottom: clamp(40px, 5vw, 72px);
+  padding-left: clamp(140px, 14vw, 220px);
+}
+.about-cards { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 860px) {
+  .about-content {
+    padding-top: clamp(88px, 11vw, 116px);
+    padding-left: clamp(20px, 6vw, 64px);
+  }
+  .about-cards { grid-template-columns: 1fr; gap: 20px; }
+}
+
+/* ── Services intro panel ─────────────────────────────────────────────────
+   The radial burst backdrop is landscape (1248×832); object-fit:cover on a
+   tall narrow viewport zooms in and crops most of its rings off. Below 860px
+   it switches to contain so the whole burst is visible, letterboxed into the
+   already-black page background (no visible seam). */
+.services-bg-image { object-fit: cover; object-position: center; }
+
+@media (max-width: 860px) {
+  .services-bg-image { object-fit: contain; }
+}
+
+/* ── Service detail panels ────────────────────────────────────────────────
+   Desktop alternates the text block and the 3D object left/right with a
+   cross-slide entrance (see ServiceDetailPanel's GSAP timeline). That only
+   makes sense as a two-column layout, so below 860px it's replaced entirely
+   by a single centred column: text first, then the shape underneath. */
+.detail-mobile-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .detail-mobile-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 96px 28px 48px;
+    text-align: center;
+  }
+  .detail-mobile-text { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
+  .detail-mobile-object {
+    width: min(64vw, 230px);
+    height: min(64vw, 230px);
+    filter: drop-shadow(0 20px 50px rgba(232, 32, 28, 0.25));
+  }
+}
+
+.detail-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 500;
+  font-size: clamp(1.5rem, 6vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+  margin: 0;
+}
+.detail-desc {
+  font-family: Satoshi, var(--font-space-grotesk), sans-serif;
+  font-size: clamp(0.95rem, 3.6vw, 1.05rem);
+  line-height: 1.55;
+  letter-spacing: -0.02em;
+  color: #cfcfcf;
+  margin: 0;
+}
+
+/* ── Our Works panel ──────────────────────────────────────────────────────
+   Same wide-rail inset issue as About; below 860px it collapses to match the
+   right padding. The heading also switches from left-aligned to centred, and
+   each card's 4-column metadata row (Project Name / Description / Industry /
+   Release Date) stacks into a single column — with its own scroll so a long
+   description can never get silently clipped by the card's rounded corners. */
+.ourworks-content {
+  padding-top: clamp(82px, 9vw, 116px);
+  padding-bottom: clamp(40px, 5vw, 72px);
+  padding-left: clamp(150px, 14vw, 210px);
+  padding-right: clamp(40px, 5vw, 80px);
+  gap: clamp(12px, 1.6vw, 22px);
+}
+.ourworks-heading { justify-content: flex-start; }
+.work-preview { flex: 1; min-height: 110px; }
+.work-meta { grid-template-columns: 1fr 2fr 1fr 1fr; }
+
+@media (max-width: 860px) {
+  .ourworks-content {
+    padding-top: clamp(88px, 11vw, 116px);
+    padding-left: clamp(20px, 6vw, 64px);
+  }
+  .ourworks-heading { justify-content: center; }
+
+  .work-preview { flex: 0 0 auto; min-height: 0; height: clamp(90px, 30vw, 140px); }
+  .work-meta {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-bottom: 4px;
+  }
+}
+
+/* ── Meet the Team panel ──────────────────────────────────────────────────
+   Same wide-rail inset as the other panels. Below 860px the heading centres
+   and the two-card-plus-diamond row (which only reads as two columns either
+   side of a centrepiece) drops the diamond entirely and stacks the cards.
+
+   Deliberately NOT given a nested overflow-y:auto scroll: this whole site
+   drives its section transitions off window.scrollY, and a scrollable div
+   nested inside a scroll-jacked layer fights that — the browser targets the
+   innermost scrollable ancestor first, so depending on which edge the inner
+   scroll is sitting at, gestures can get consumed locally instead of
+   reaching the window (trapping the user, unable to continue in either
+   direction). Sized tight enough on mobile to fit without one instead. */
+.team-content { padding-top: clamp(72px, 8vw, 104px); padding-bottom: clamp(28px, 3.5vw, 52px); padding-left: clamp(150px, 14vw, 210px); padding-right: clamp(40px, 5vw, 80px); gap: clamp(16px, 2.4vw, 30px); }
+.team-heading { justify-content: flex-start; }
+.team-row { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: clamp(36px, 5vw, 88px); margin-left: clamp(28px, 3vw, 44px); }
+.team-card { width: clamp(230px, 22vw, 310px); }
+.team-photo { height: clamp(150px, 14vw, 200px); }
+
+@media (max-width: 860px) {
+  .team-content { padding-top: clamp(76px, 10vw, 100px); padding-left: clamp(20px, 6vw, 64px); gap: 14px; }
+  .team-heading { justify-content: center; }
+  .team-row { flex-direction: column; justify-content: center; margin-left: 0; gap: 16px; flex: 0 0 auto; padding: 4px 0; }
+  .team-card { width: min(84vw, 320px); gap: 10px; padding: 12px !important; }
+  .team-photo { height: clamp(90px, 24vw, 130px); }
+}
+
+/* ── Contact / "Let's Connect" panel ──────────────────────────────────────
+   Same treatment: centred heading, the form-plus-diamond row drops the
+   diamond and the form goes full-width single column below 860px. Also
+   deliberately no nested scroll, for the same reason as .team-content above. */
+.contact-content { padding-top: clamp(78px, 8vw, 108px); padding-bottom: clamp(20px, 2.5vw, 34px); padding-left: clamp(150px, 14vw, 210px); padding-right: clamp(40px, 5vw, 80px); gap: clamp(16px, 2.2vw, 30px); }
+.contact-heading { justify-content: flex-start; }
+.contact-row { flex: 1; display: flex; align-items: center; gap: clamp(24px, 4vw, 64px); min-height: 0; }
+.contact-form { flex: 0 0 clamp(300px, 42vw, 540px); }
+.contact-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+@media (max-width: 860px) {
+  .contact-content { padding-top: clamp(76px, 10vw, 100px); padding-left: clamp(20px, 6vw, 64px); gap: 12px; }
+  .contact-heading { justify-content: center; }
+  .contact-row { flex-direction: column; align-items: stretch; flex: 1 1 auto; gap: 12px; min-height: 0; }
+  .contact-form { flex: 1 1 auto; width: 100%; gap: 10px !important; }
+  .contact-form-grid { grid-template-columns: 1fr; gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .contact-footer { flex-wrap: wrap; gap: 6px 16px; }
+}

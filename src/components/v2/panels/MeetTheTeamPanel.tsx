@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
+import { useIsMobile } from '../useIsMobile';
 
 interface Member {
   name: string;
@@ -66,10 +67,9 @@ function Socials() {
 function TeamCard({ member, anim, delay }: { member: Member; anim: string; delay: number }) {
   return (
     <div
-      className={anim}
+      className={`team-card${anim ? ` ${anim}` : ''}`}
       style={{
         flexShrink: 0,
-        width: 'clamp(230px,22vw,310px)',
         borderRadius: 20,
         background: '#0e0e12',
         border: '1px solid rgba(255,255,255,0.1)',
@@ -82,9 +82,9 @@ function TeamCard({ member, anim, delay }: { member: Member; anim: string; delay
     >
       {/* Photo */}
       <div
+        className="team-photo"
         style={{
           width: '100%',
-          height: 'clamp(150px,14vw,200px)',
           borderRadius: 14,
           background: 'linear-gradient(135deg,#2d2b5b,#1c1b3a)',
           border: '1px solid rgba(255,255,255,0.08)',
@@ -122,27 +122,23 @@ function TeamCard({ member, anim, delay }: { member: Member; anim: string; delay
 
 export function MeetTheTeamPanel({ isVisible }: { isVisible: boolean }) {
   const anim = isVisible ? 'animate-fade-slide-up' : '';
+  const isMobile = useIsMobile();
   return (
     <div
+      className="team-content"
       style={{
         position: 'absolute',
         inset: 0,
         zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 'clamp(72px,8vw,104px)',
-        paddingBottom: 'clamp(28px,3.5vw,52px)',
-        paddingLeft: 'clamp(150px,14vw,210px)',
-        paddingRight: 'clamp(40px,5vw,80px)',
-        gap: 'clamp(16px,2.4vw,30px)',
       }}
     >
-      {/* Heading */}
+      {/* Heading — centred on mobile, left-aligned on desktop */}
       <div
-        className={anim}
+        className={`team-heading${anim ? ` ${anim}` : ''}`}
         style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: isVisible ? undefined : 0, flexShrink: 0 }}
       >
-        <Image src="/ismora-logo.svg" alt="" width={27} height={24} style={{ filter: 'brightness(0) invert(1)' }} />
         <span
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
@@ -158,20 +154,15 @@ export function MeetTheTeamPanel({ isVisible }: { isVisible: boolean }) {
 
       {/* Two members with the rotating diamond between them — spread across the
           width so the cards sit near the edges (not clustered in the centre). */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          gap: 'clamp(36px,5vw,88px)',
-          marginLeft: 'clamp(28px,3vw,44px)', // indent to line up with the header text
-        }}
-      >
+      <div className="team-row">
         <TeamCard member={TEAM[0]} anim={anim} delay={0.1} />
-        <div style={{ width: 'clamp(150px,18vw,260px)', height: 'clamp(150px,18vw,260px)', flexShrink: 0 }}>
-          <Object3DViewer shape="diamond" size={260} speed={0.6} />
-        </div>
+        {/* The rotating diamond is a two-column-layout flourish — dropped on
+            mobile (single column, no 3D) rather than shrunk, per direction. */}
+        {!isMobile && (
+          <div style={{ width: 'clamp(150px,18vw,260px)', height: 'clamp(150px,18vw,260px)', flexShrink: 0 }}>
+            <Object3DViewer shape="diamond" size={260} speed={0.6} />
+          </div>
+        )}
         <TeamCard member={TEAM[1]} anim={anim} delay={0.2} />
       </div>
 
