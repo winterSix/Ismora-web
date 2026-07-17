@@ -19,6 +19,10 @@ export default function AdminDashboardPage() {
               <span className="admin-bento-desc">{resource.description}</span>
             </Link>
           ))}
+          <Link href="/admin/sections" className="admin-card admin-bento-card">
+            <span className="admin-bento-title">Sections</span>
+            <span className="admin-bento-desc">Show or hide whole homepage sections. Super Admin only.</span>
+          </Link>
         </div>
       </div>
     </>

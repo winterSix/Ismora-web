@@ -2,12 +2,12 @@ import Image from 'next/image';
 import { Object3DViewer } from '../Object3DViewer';
 import { useIsMobile } from '../useIsMobile';
 
-interface Member {
+export interface Member {
   name: string;
   role: string;
 }
 
-const TEAM: Member[] = [
+export const TEAM: Member[] = [
   { name: 'Ismail Raji', role: 'CEO & Co-founder' },
   { name: 'Kanyinsola Olawuyi', role: 'CPO & Co-founder' },
 ];
@@ -120,9 +120,13 @@ function TeamCard({ member, anim, delay }: { member: Member; anim: string; delay
   );
 }
 
-export function MeetTheTeamPanel({ isVisible }: { isVisible: boolean }) {
+export function MeetTheTeamPanel({ isVisible, members = TEAM }: { isVisible: boolean; members?: Member[] }) {
   const anim = isVisible ? 'animate-fade-slide-up' : '';
   const isMobile = useIsMobile();
+  // The rotating diamond is a two-column-layout flourish designed for exactly
+  // two members (one either side). Any other count just rows/wraps the cards
+  // without it rather than trying to redesign the centrepiece for N people.
+  const showDiamond = !isMobile && members.length === 2;
   return (
     <div
       className="team-content"
@@ -153,17 +157,20 @@ export function MeetTheTeamPanel({ isVisible }: { isVisible: boolean }) {
       </div>
 
       {/* Two members with the rotating diamond between them — spread across the
-          width so the cards sit near the edges (not clustered in the centre). */}
+          width so the cards sit near the edges (not clustered in the centre).
+          Any other member count just rows/wraps the cards without the diamond. */}
       <div className="team-row">
-        <TeamCard member={TEAM[0]} anim={anim} delay={0.1} />
-        {/* The rotating diamond is a two-column-layout flourish — dropped on
-            mobile (single column, no 3D) rather than shrunk, per direction. */}
-        {!isMobile && (
-          <div style={{ width: 'clamp(150px,18vw,260px)', height: 'clamp(150px,18vw,260px)', flexShrink: 0 }}>
-            <Object3DViewer shape="diamond" size={260} speed={0.6} />
-          </div>
+        {showDiamond ? (
+          <>
+            <TeamCard member={members[0]} anim={anim} delay={0.1} />
+            <div style={{ width: 'clamp(150px,18vw,260px)', height: 'clamp(150px,18vw,260px)', flexShrink: 0 }}>
+              <Object3DViewer shape="diamond" size={260} speed={0.6} />
+            </div>
+            <TeamCard member={members[1]} anim={anim} delay={0.2} />
+          </>
+        ) : (
+          members.map((member, i) => <TeamCard key={member.name} member={member} anim={anim} delay={0.1 * (i + 1)} />)
         )}
-        <TeamCard member={TEAM[1]} anim={anim} delay={0.2} />
       </div>
 
       {/* Let's Connect — intro band at the bottom */}

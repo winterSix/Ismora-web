@@ -10,6 +10,7 @@ import { ALL_RESOURCES } from '@/lib/adminResources';
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard' },
   ...ALL_RESOURCES.map((r) => ({ href: `/admin/${r.key}`, label: r.title })),
+  { href: '/admin/sections', label: 'Sections' },
 ];
 
 function initials(firstName?: string, lastName?: string) {
