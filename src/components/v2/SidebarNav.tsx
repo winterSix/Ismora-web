@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 
-const SECTIONS = [
+const DEFAULT_SECTIONS = [
   'Introduction',
   'About Us',
   'Services',
@@ -15,9 +15,12 @@ const SECTIONS = [
 interface SidebarNavProps {
   activeSection: number;
   onNavigate: (index: number) => void;
+  /** Labels for the currently-enabled sections, in scroll order. Defaults to
+   * all six for backwards compatibility with any standalone usage. */
+  sections?: string[];
 }
 
-export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
+export function SidebarNav({ activeSection, onNavigate, sections = DEFAULT_SECTIONS }: SidebarNavProps) {
   const dotsRef = useRef<(HTMLSpanElement | null)[]>([]);
   // Below 860px the rail becomes a hamburger-triggered drawer (see globals.css).
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -91,13 +94,12 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
           }}
         />
 
-        {SECTIONS.map((label, i) => {
+        {sections.map((label, i) => {
           const isActive = i === activeSection;
-          const isDisabled = i > 5;
           return (
             <button
               key={label}
-              onClick={() => !isDisabled && handleSelect(i)}
+              onClick={() => handleSelect(i)}
               className="sidebar-item"
               aria-label={label}
               aria-current={isActive ? 'true' : undefined}
@@ -107,8 +109,7 @@ export function SidebarNav({ activeSection, onNavigate }: SidebarNavProps) {
                 gap: 12,
                 background: 'none',
                 border: 'none',
-                cursor: isDisabled ? 'default' : 'pointer',
-                opacity: isDisabled ? 0.35 : 1,
+                cursor: 'pointer',
               }}
             >
               <span

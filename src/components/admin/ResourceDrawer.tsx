@@ -158,6 +158,22 @@ export function ResourceDrawer({
                   folder={config.key}
                   isImage={field.type === 'image'}
                 />
+              ) : field.type === 'select' ? (
+                <select
+                  id={field.key}
+                  className="admin-select"
+                  value={String(state[field.key] ?? '')}
+                  onChange={(e) => setValue(field.key, e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select…
+                  </option>
+                  {field.options?.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               ) : (
                 <input
                   id={field.key}
