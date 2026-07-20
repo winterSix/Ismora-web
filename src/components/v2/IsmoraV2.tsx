@@ -352,7 +352,16 @@ export function IsmoraV2({
     };
 
     // Smooth the raw scroll position so progress-driven motion inside panels has
-    // inertia instead of stepping with the wheel.
+    // inertia instead of stepping with the wheel. That reasoning only applies to
+    // wheel input, which is naturally discrete/steppy — touch scrolling is
+    // already smoothed by the OS's own momentum physics, so applying this same
+    // smoothing on top of it double-lags the page behind your finger, which
+    // reads as sluggish/unresponsive rather than "inertial". Touch devices get
+    // a much higher rate constant so `smooth` converges to the real scrollY
+    // almost immediately, effectively tracking 1:1 with the finger.
+    const isCoarsePointer =
+      typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+    const scrollRate = isCoarsePointer ? 40 : 8.5;
     let raf = 0;
     let smooth = window.scrollY;
     let lastT = 0;
@@ -363,7 +372,7 @@ export function IsmoraV2({
       const now = performance.now();
       const dt = Math.min((now - lastT) / 1000, 0.1);
       lastT = now;
-      const kScroll = 1 - Math.exp(-8.5 * dt);
+      const kScroll = 1 - Math.exp(-scrollRate * dt);
       const kFade = 1 - Math.exp(-7 * dt); // ~0.45s fade-in / push-in
 
       const target = window.scrollY;
