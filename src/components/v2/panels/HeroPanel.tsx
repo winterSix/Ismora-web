@@ -13,11 +13,12 @@ const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 const SHOW_LOGO = false;
 
 export function HeroPanel({ progress, active }: HeroPanelProps) {
-  // Staged scroll reveal, all pinned on this page:
-  //  • progress 0.00–0.20  → living terrain only
-  //  • progress 0.20–0.50  → headline fades/zooms in
-  //  • progress 0.52–0.85  → the 3D brand mark materialises and rotates
-  const headlineReveal = clamp((progress - 0.2) / 0.3);
+  // The headline is visible immediately on landing (2026-07 content review —
+  // it's the first thing a visitor should see, alongside the terrain, not
+  // something that only appears after scrolling in).
+  //  • progress 0.00 onward → headline + terrain both visible at once
+  //  • progress 0.52–0.85   → the 3D brand mark materialises and rotates
+  const headlineReveal = 1;
   const reveal = clamp((progress - 0.52) / 0.33);
   // Headline drifts up slightly to make room as the mark grows.
   const headlineShift = -34 * reveal;

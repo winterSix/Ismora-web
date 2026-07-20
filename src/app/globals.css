@@ -383,13 +383,51 @@ button { font: inherit; cursor: pointer; }
   gap: 8px;
   pointer-events: none;
 }
+/* Dark theme (default): the mark's real fill is brand red, but forced to
+   white here since every panel behind it is a dark background. Light theme
+   shows the mark in its real red — see item 7 of the 2026-07 content review:
+   the primary logo previously had nowhere it could appear undistorted. */
 .brand-mark { filter: brightness(0) invert(1); width: 22px; height: 22px; }
+:root[data-theme='light'] .brand-mark { filter: none; }
 .brand-word {
   font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 500;
   font-size: 30px;
   color: #ffffff;
   letter-spacing: -0.02em;
+}
+
+/* Theme toggle — fixed top-right, same chrome layer as the logo/sidebar. */
+.theme-toggle {
+  position: fixed;
+  top: 46px;
+  right: 26px;
+  z-index: 210;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  color: #ffffff;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.theme-toggle:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28); }
+.theme-toggle-dot {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--red);
+}
+
+@media (max-width: 860px) {
+  .theme-toggle { top: 22px; right: 74px; width: 32px; height: 32px; }
 }
 
 .sidebar-nav {
@@ -523,10 +561,13 @@ button { font: inherit; cursor: pointer; }
    the heading centres on the actual viewport instead of an off-centre box,
    and the three service cards stack vertically instead of a cramped grid. */
 .about-content {
-  padding-top: clamp(40px, 5vw, 72px);
+  padding-top: clamp(52px, 5vw, 72px);
   padding-right: clamp(24px, 5vw, 80px);
   padding-bottom: clamp(40px, 5vw, 72px);
-  padding-left: clamp(140px, 14vw, 220px);
+  /* Floor raised from 140 to clear the sidebar rail's actual rendered width
+     (~162px, fixed regardless of viewport) — below ~1210px the old 14vw term
+     hadn't caught up yet, so the cards grid overlapped the nav labels. */
+  padding-left: clamp(190px, 14vw, 220px);
 }
 .about-cards { grid-template-columns: repeat(3, 1fr); }
 
@@ -606,7 +647,8 @@ button { font: inherit; cursor: pointer; }
 .ourworks-content {
   padding-top: clamp(82px, 9vw, 116px);
   padding-bottom: clamp(40px, 5vw, 72px);
-  padding-left: clamp(150px, 14vw, 210px);
+  /* Floor raised from 150 — see .about-content comment above. */
+  padding-left: clamp(190px, 14vw, 210px);
   padding-right: clamp(40px, 5vw, 80px);
   gap: clamp(12px, 1.6vw, 22px);
 }
@@ -643,7 +685,7 @@ button { font: inherit; cursor: pointer; }
    scroll is sitting at, gestures can get consumed locally instead of
    reaching the window (trapping the user, unable to continue in either
    direction). Sized tight enough on mobile to fit without one instead. */
-.team-content { padding-top: clamp(72px, 8vw, 104px); padding-bottom: clamp(28px, 3.5vw, 52px); padding-left: clamp(150px, 14vw, 210px); padding-right: clamp(40px, 5vw, 80px); gap: clamp(16px, 2.4vw, 30px); }
+.team-content { padding-top: clamp(72px, 8vw, 104px); padding-bottom: clamp(28px, 3.5vw, 52px); padding-left: clamp(190px, 14vw, 210px); padding-right: clamp(40px, 5vw, 80px); gap: clamp(16px, 2.4vw, 30px); }
 .team-heading { justify-content: flex-start; }
 .team-row { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: clamp(36px, 5vw, 88px); margin-left: clamp(28px, 3vw, 44px); }
 .team-card { width: clamp(230px, 22vw, 310px); }
@@ -661,7 +703,7 @@ button { font: inherit; cursor: pointer; }
    Same treatment: centred heading, the form-plus-diamond row drops the
    diamond and the form goes full-width single column below 860px. Also
    deliberately no nested scroll, for the same reason as .team-content above. */
-.contact-content { padding-top: clamp(78px, 8vw, 108px); padding-bottom: clamp(20px, 2.5vw, 34px); padding-left: clamp(150px, 14vw, 210px); padding-right: clamp(40px, 5vw, 80px); gap: clamp(16px, 2.2vw, 30px); }
+.contact-content { padding-top: clamp(78px, 8vw, 108px); padding-bottom: clamp(20px, 2.5vw, 34px); padding-left: clamp(190px, 14vw, 210px); padding-right: clamp(40px, 5vw, 80px); gap: clamp(16px, 2.2vw, 30px); }
 .contact-heading { justify-content: flex-start; }
 .contact-row { flex: 1; display: flex; align-items: center; gap: clamp(24px, 4vw, 64px); min-height: 0; }
 .contact-form { flex: 0 0 clamp(300px, 42vw, 540px); }

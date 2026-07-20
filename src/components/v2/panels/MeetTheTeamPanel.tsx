@@ -164,7 +164,7 @@ export function MeetTheTeamPanel({ isVisible, members = TEAM }: { isVisible: boo
           <>
             <TeamCard member={members[0]} anim={anim} delay={0.1} />
             <div style={{ width: 'clamp(150px,18vw,260px)', height: 'clamp(150px,18vw,260px)', flexShrink: 0 }}>
-              <Object3DViewer shape="diamond" size={260} speed={0.6} />
+              <Object3DViewer shape="diamond" size={260} speed={0.6} active={isVisible} />
             </div>
             <TeamCard member={members[1]} anim={anim} delay={0.2} />
           </>
@@ -179,7 +179,7 @@ export function MeetTheTeamPanel({ isVisible, members = TEAM }: { isVisible: boo
         style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0, opacity: isVisible ? undefined : 0, animationDelay: isVisible ? '0.3s' : undefined }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Image src="/ismora-logo.svg" alt="" width={22} height={20} style={{ filter: 'brightness(0) invert(1)' }} />
+          <Image src="/ismora-logo.svg" alt="" width={22} height={20} className="brand-mark" style={{ width: 22, height: 20 }} />
           <span
             style={{
               fontFamily: 'var(--font-space-grotesk), sans-serif',

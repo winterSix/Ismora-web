@@ -5,6 +5,7 @@ interface WorkItemDto {
   id: string;
   name: string;
   logo: string;
+  logoImageUrl?: string | null;
   description: string;
   industry: string;
   date: string;
@@ -21,6 +22,7 @@ export async function getWorkProjects(): Promise<Project[]> {
   return items.map((item) => ({
     name: item.name,
     logo: item.logo,
+    logoImageUrl: item.logoImageUrl ?? undefined,
     description: item.description,
     industry: item.industry,
     date: item.date,

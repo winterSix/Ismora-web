@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, cloneElement, isValidElement } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import { SidebarNav } from './SidebarNav';
@@ -11,7 +11,8 @@ import { ServicesIntroPanel } from './panels/ServicesIntroPanel';
 import { ServiceDetailPanel, SERVICE_DETAILS, type ServiceDetail } from './panels/ServiceDetailPanel';
 import { OurWorksPanel, PROJECTS, type Project } from './panels/OurWorksPanel';
 import { MeetTheTeamPanel, TEAM, type Member } from './panels/MeetTheTeamPanel';
-import { ContactPanel } from './panels/ContactPanel';
+import { ContactPanel, type FooterSiteSettings } from './panels/ContactPanel';
+import { ThemeToggle } from './ThemeToggle';
 
 const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 
@@ -58,7 +59,12 @@ interface Group {
 // counts) that decide how many slides a group actually has. Grouping keeps
 // "one sidebar item can span multiple scroll slides" (Services: intro + N
 // detail slides) explicit instead of encoded in index arithmetic.
-function buildGroups(projects: Project[], services: ServiceDetail[], members: Member[]): Group[] {
+function buildGroups(
+  projects: Project[],
+  services: ServiceDetail[],
+  members: Member[],
+  siteSettings?: FooterSiteSettings
+): Group[] {
   return [
     {
       key: 'hero',
@@ -78,7 +84,13 @@ function buildGroups(projects: Project[], services: ServiceDetail[], members: Me
       slides: [
         {
           key: 'about',
-          reveal: 3.4,
+          // The word-by-word text reveal and card parallax are percentage-of-
+          // progress based, so shortening this compresses both proportionally
+          // into less scroll distance rather than changing their relative
+          // timing — content was fully settled well before the section's
+          // scroll allowance ran out, leaving a long "dead" tail before
+          // Services began.
+          reveal: 2.6,
           renderBg: () => (
             <div
               aria-hidden
@@ -109,8 +121,19 @@ function buildGroups(projects: Project[], services: ServiceDetail[], members: Me
           key: 'services-intro',
           // Services intro is a one-shot title card (its scroll-driven cube
           // is disabled via SHOW_LOGO), so it's effectively static — keep its
-          // scroll range short.
-          reveal: 1.0,
+          // scroll range short. (2026-07: an earlier attempt to shorten this
+          // looked janky, but that was actually the ServiceDetailPanel
+          // React/GSAP opacity conflict, not the length itself — now that
+          // bug is fixed, shortening this is safe. A wheel-event-based
+          // pagination approach was also tried and reverted — it behaved
+          // unpredictably on real trackpads/mice — so this is a plain
+          // shorter scroll distance, no custom scroll interception.
+          // 2026-07-20: bumped back up from 0.5 — the whole services group
+          // had gotten short enough that a single strong scroll gesture could
+          // cover its entire scroll distance in one motion, blowing straight
+          // through every detail slide into the next group instead of
+          // landing on one of them.)
+          reveal: 0.65,
           renderBg: () => (
             <div aria-hidden style={{ position: 'absolute', inset: 0 }}>
               <Image src="/images/radial-red-bg.png" alt="" fill className="services-bg-image" />
@@ -122,7 +145,9 @@ function buildGroups(projects: Project[], services: ServiceDetail[], members: Me
         ...services.map(
           (detail, k): Slide => ({
             key: `service-detail-${k}`,
-            reveal: 0.8,
+            // 2026-07-20: bumped from 0.45 — same reason as services-intro
+            // above, a strong scroll could skip clean over several of these.
+            reveal: 0.75,
             zoom: k === 0,
             renderBg: () => (
               <div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000' }}>
@@ -135,7 +160,9 @@ function buildGroups(projects: Project[], services: ServiceDetail[], members: Me
                 />
               </div>
             ),
-            renderContent: ({ prog, active }) => <ServiceDetailPanel detail={detail} isVisible={active} progress={prog} index={k} />,
+            renderContent: ({ prog, active, visited }) => (
+              <ServiceDetailPanel detail={detail} isVisible={active} hasEntered={visited} progress={prog} index={k} />
+            ),
           })
         ),
       ],
@@ -169,7 +196,7 @@ function buildGroups(projects: Project[], services: ServiceDetail[], members: Me
       slides: [
         {
           key: 'team',
-          reveal: 0.8,
+          reveal: 0.5,
           renderBg: () => <div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000' }} />,
           renderContent: ({ active }) => <MeetTheTeamPanel isVisible={active} members={members} />,
         },
@@ -181,9 +208,12 @@ function buildGroups(projects: Project[], services: ServiceDetail[], members: Me
       slides: [
         {
           key: 'contact',
-          reveal: 0.9,
+          reveal: 0.5,
           renderBg: () => <div aria-hidden style={{ position: 'absolute', inset: 0, background: '#000' }} />,
-          renderContent: ({ active }) => <ContactPanel isVisible={active} />,
+          // `sections`/`onNavigate` aren't known yet here (they depend on
+          // which groups end up enabled, computed AFTER this list is built) —
+          // IsmoraV2 injects them via cloneElement at render time instead.
+          renderContent: ({ active }) => <ContactPanel isVisible={active} siteSettings={siteSettings} />,
         },
       ],
     },
@@ -195,19 +225,21 @@ export function IsmoraV2({
   services = SERVICE_DETAILS,
   members = TEAM,
   visibility = DEFAULT_VISIBILITY,
+  siteSettings,
 }: {
   projects?: Project[];
   services?: ServiceDetail[];
   members?: Member[];
   visibility?: SectionVisibility;
+  siteSettings?: FooterSiteSettings;
 } = {}) {
   // Disabled sections are dropped as WHOLE groups before flattening, so a
   // hidden section never leaves a blank scroll dead-zone behind — everything
   // downstream (indices, sidebar labels, nav targets) is derived from the
   // filtered, flattened list, never from a fixed section count.
   const enabledGroups = useMemo(
-    () => buildGroups(projects, services, members).filter((g) => visibility[g.key]),
-    [projects, services, members, visibility]
+    () => buildGroups(projects, services, members, siteSettings).filter((g) => visibility[g.key]),
+    [projects, services, members, siteSettings, visibility]
   );
 
   const sidebarLabels = useMemo(() => enabledGroups.map((g) => g.label), [enabledGroups]);
@@ -252,6 +284,14 @@ export function IsmoraV2({
   const tickingRef = useRef(false);
   // Last width the layout was computed for — see onResize below.
   const lastWidthRef = useRef(0);
+  // While a sidebar nav jump is in flight, the scroll position sweeps across
+  // every intermediate section on its way to the target (native smooth-scroll
+  // and the smoothing `tick` loop both animate through those y values), which
+  // would otherwise flash each one's content as it briefly becomes "active".
+  // Pinning `cur` to the destination for the duration of the jump skips
+  // straight to a cut-then-fade into the target instead. Cleared once the
+  // scroll settles, so organic scrolling is untouched.
+  const jumpTargetRef = useRef<number | null>(null);
 
   // Recompute the scroll layout for the current viewport height.
   const computeLayout = useCallback(() => {
@@ -293,6 +333,7 @@ export function IsmoraV2({
       for (let i = 0; i < starts.length; i++) {
         if (y >= starts[i] - 2) cur = i;
       }
+      if (jumpTargetRef.current !== null) cur = jumpTargetRef.current;
 
       let fadeDone = true;
       eased = SECTIONS.map((_, i) => {
@@ -334,6 +375,7 @@ export function IsmoraV2({
       // Keep ticking until the scroll has settled AND the active layer has fully
       // faded in, so the entrance still completes after the scroll stops.
       if (scrollDone && fadeDone) {
+        jumpTargetRef.current = null;
         tickingRef.current = false;
         return;
       }
@@ -371,9 +413,18 @@ export function IsmoraV2({
 
   const navigateToSection = useCallback(
     (sidebarIndex: number) => {
-      const { starts } = layoutRef.current;
+      const { starts, reveals } = layoutRef.current;
       const sectionIndex = groupStartIndex[sidebarIndex] ?? 0;
-      window.scrollTo({ top: starts[sectionIndex] ?? 0, behavior: 'smooth' });
+      jumpTargetRef.current = sectionIndex;
+      // Land slightly past the slide's exact start (progress > 0), not
+      // exactly on it. Some panels (e.g. AboutPanel) drive their own content
+      // opacity off `progress` for a fast fade-in as the user scrolls IN —
+      // during organic scrolling that's never an issue (momentum carries you
+      // straight past progress 0), but a jump that lands and settles at
+      // exactly progress 0 leaves that panel's own opacity clamped to 0
+      // forever, even though the outer cross-fade layer is fully visible.
+      const offset = (reveals[sectionIndex] ?? 0) * 0.08;
+      window.scrollTo({ top: (starts[sectionIndex] ?? 0) + offset, behavior: 'smooth' });
     },
     [groupStartIndex]
   );
@@ -460,8 +511,19 @@ export function IsmoraV2({
         <span className="brand-word">ısmora</span>
       </div>
 
-      {/* Fixed Sidebar Nav */}
-      <SidebarNav activeSection={activeSection} onNavigate={navigateToSection} sections={sidebarLabels} />
+      <ThemeToggle />
+
+      {/* Fixed Sidebar Nav — hidden on the first page (nothing to jump to yet)
+          and shown from the second page through the last. */}
+      <div
+        style={{
+          opacity: activeSection === 0 ? 0 : 1,
+          pointerEvents: activeSection === 0 ? 'none' : 'auto',
+          transition: 'opacity 0.4s ease',
+        }}
+      >
+        <SidebarNav activeSection={activeSection} onNavigate={navigateToSection} sections={sidebarLabels} />
+      </div>
 
       {/* Base black backdrop — shown during fade-through-black transitions */}
       <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 0, background: '#000', pointerEvents: 'none' }} />
@@ -478,7 +540,15 @@ export function IsmoraV2({
             active: (op[flatIndex] ?? 0) > 0.5,
             visited: visited.has(flatIndex),
           };
-          return layer(flatIndex, slide.renderBg(ctx), slide.renderContent(ctx));
+          let content = slide.renderContent(ctx);
+          // The footer's nav links depend on which groups ended up enabled —
+          // only known here, after buildGroups + the visibility filter ran —
+          // so they're injected onto the already-built <ContactPanel> rather
+          // than threaded through buildGroups itself.
+          if (group.key === 'contact' && isValidElement(content)) {
+            content = cloneElement(content, { sections: sidebarLabels, onNavigate: navigateToSection } as any);
+          }
+          return layer(flatIndex, slide.renderBg(ctx), content);
         })
       )}
 
@@ -498,12 +568,14 @@ export function IsmoraV2({
       {/* Spacer that gives the document its scroll length */}
       <div style={{ height: docH }} aria-hidden />
 
-      {/* Persistent "Scroll to Discover" */}
+      {/* "Scroll to Discover" — only on the first page (encourages scrolling
+          in) and the last page (2026-07 content review), hidden everywhere
+          in between and once there's truly nothing further to scroll to. */}
       <div
         aria-hidden
         className="scroll-hint"
         style={{
-          opacity: atEnd ? 0 : 1,
+          opacity: (activeSection === 0 || activeSection === sidebarLabels.length - 1) && !atEnd ? 1 : 0,
           transition: 'opacity 0.5s ease',
         }}
       >

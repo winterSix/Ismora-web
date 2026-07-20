@@ -1,10 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
-import gsap from 'gsap';
 import { Object3DViewer } from '../Object3DViewer';
 import type { Shape3D } from '../Object3DViewer';
-import { useIsomorphicLayoutEffect } from '../useIsomorphicLayoutEffect';
 import { useReveal } from '../useReveal';
 import { useIsMobile } from '../useIsMobile';
 
@@ -31,7 +28,7 @@ export const SERVICE_DETAILS: ServiceDetail[] = [
   {
     title: 'Connected Systems & Hardware Integration',
     description:
-      'When software needs to talk to the physical world — scanners, cards, sensors, RFID — we build the bridge. We integrate hardware sourced locally or globally into custom software that fits the way the business actually runs.',
+      'When software needs to talk to the physical world (scanners, cards, sensors, RFID), we build the bridge. We integrate hardware sourced locally or globally into custom software that fits the way the business actually runs.',
     shape: 'swirl',
     color: '#17171b',
     emissive: '#ff3b1e',
@@ -49,7 +46,7 @@ export const SERVICE_DETAILS: ServiceDetail[] = [
   {
     title: 'Product Strategy & Discovery',
     description:
-      'Before we build, we make sure the right thing is being built. We run focused engagements to turn a fuzzy idea into a scoped, costed, build-ready plan — even if you take that plan to someone else.',
+      'Before we build, we make sure the right thing is being built. We run focused engagements to turn a fuzzy idea into a scoped, costed, build-ready plan, even if you take that plan to someone else.',
     shape: 'gem',
     color: '#ff9a90',
     emissive: '#7a0a10',
@@ -60,9 +57,16 @@ export const SERVICE_DETAILS: ServiceDetail[] = [
 export function ServiceDetailPanel({
   detail,
   isVisible,
+  hasEntered,
 }: {
   detail: ServiceDetail;
+  /** Currently on-screen (scroll opacity past the crossfade threshold) — drives
+   * the 3D viewer's pause/resume and the panel's own show/hide fade. */
   isVisible: boolean;
+  /** Has this slide ever been reached — triggers the one-shot entrance
+   * exactly once, at the same moment the outer crossfade starts (not gated
+   * on the crossfade reaching 50%, which caused a double-animation "blink"). */
+  hasEntered: boolean;
   /** Unused — kept for API compatibility. */
   progress: number;
   /** Unused — the "01 / 04" kicker was removed; kept for API compatibility. */
@@ -73,63 +77,23 @@ export function ServiceDetailPanel({
 
   // Fixed horizontal anchors matched to the reference screens.
   const objCenterLeft = side === 'right' ? '78%' : '28%';
-  const textLeft = side === 'right' ? 'clamp(150px,14vw,205px)' : '50%';
+  // Floor raised from 150 to clear the sidebar rail's actual rendered width
+  // (~162px, fixed regardless of viewport) at narrower desktop widths.
+  const textLeft = side === 'right' ? 'clamp(190px,14vw,205px)' : '50%';
 
-  // Cross-slide as a ONE-SHOT GSAP entrance (not scroll-scrubbed): when the page
-  // becomes active, the diamond and text start on each other's side and slide to
-  // their final anchors, with the title + description staggering in. A single
-  // scroll always completes the exchange — you never get parked in the overlap.
-  // Desktop only — the mobile stack below plays a simpler fade/rise instead,
-  // since there's no "other side" to cross-slide from once it's a single column.
-  const sign = side === 'right' ? 1 : -1;
-  const SWAP = 44; // vw start offset (on the opposite side)
-
-  const objRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const descRef = useRef<HTMLParagraphElement>(null);
-  const played = useRef(false);
-
-  useIsomorphicLayoutEffect(() => {
-    if (isMobile || !isVisible || played.current || !objRef.current) return;
-    played.current = true;
-
-    const off = (window.innerWidth * SWAP) / 100; // vw → px
-    const ctx = gsap.context(() => {
-      const ease = 'power3.out';
-      const tl = gsap.timeline();
-      // The object is horizontally centred on its anchor via xPercent, so the
-      // slide rides on top of that without losing the centring.
-      tl.fromTo(
-        objRef.current,
-        { xPercent: -50, x: -sign * off, opacity: 0 },
-        { xPercent: -50, x: 0, opacity: 1, duration: 0.8, ease },
-        0
-      )
-        .fromTo(
-          textRef.current,
-          { x: sign * off, opacity: 0 },
-          { x: 0, opacity: 1, duration: 0.8, ease },
-          0
-        )
-        .fromTo(
-          [titleRef.current, descRef.current],
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.6, ease, stagger: 0.12 },
-          0.2
-        );
-    });
-
-    return () => ctx.revert();
-  }, [isVisible, isMobile]);
-
-  // Mobile: text first, then the 3D shape below it — a plain top-to-bottom
-  // stack reusing the same [data-reveal] fade/rise pattern as the other panels.
-  const mobileScope = useReveal<HTMLDivElement>(isMobile && isVisible, { y: 26, stagger: 0.14 });
+  // One-shot fade/rise entrance — the same proven pattern used by every other
+  // panel (About, Services intro, Our Works). Triggered by `hasEntered` so it
+  // starts in sync with the outer crossfade instead of partway through it.
+  const revealScope = useReveal<HTMLDivElement>(!isMobile && hasEntered, { y: 24, duration: 0.7 });
+  const mobileScope = useReveal<HTMLDivElement>(isMobile && hasEntered, { y: 26, stagger: 0.14 });
 
   if (isMobile) {
     return (
-      <div ref={mobileScope} className="detail-mobile-stack" style={{ opacity: isVisible ? 1 : 0 }}>
+      <div
+        ref={mobileScope}
+        className="detail-mobile-stack"
+        style={{ opacity: isVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}
+      >
         <div data-reveal className="detail-mobile-text">
           <h3 className="detail-title">{title}</h3>
           <p className="detail-desc">{description}</p>
@@ -149,14 +113,12 @@ export function ServiceDetailPanel({
   }
 
   return (
-    <>
-      {/* Black stage is handled by the fixed crossfading layer (base) */}
-
+    <div ref={revealScope} style={{ position: 'absolute', inset: 0, opacity: isVisible ? 1 : 0, transition: 'opacity 0.4s ease' }}>
       {/* 3D object — full-height flex wrapper centres it vertically; left% fixes
           the horizontal anchor. The object is centred in its own canvas, so it
           lines up with the text's vertical centre. */}
       <div
-        ref={objRef}
+        data-reveal
         style={{
           position: 'absolute',
           top: 0,
@@ -168,8 +130,6 @@ export function ServiceDetailPanel({
           justifyContent: 'center',
           zIndex: 5,
           pointerEvents: 'none',
-          opacity: isVisible ? 1 : 0,
-          willChange: 'transform, opacity',
         }}
       >
         <div
@@ -193,7 +153,7 @@ export function ServiceDetailPanel({
       {/* Text — full-height flex wrapper centres it vertically; left% fixes the
           horizontal anchor (just past the sidebar, or at mid-page). */}
       <div
-        ref={textRef}
+        data-reveal
         style={{
           position: 'absolute',
           top: 0,
@@ -205,12 +165,9 @@ export function ServiceDetailPanel({
           justifyContent: 'center',
           gap: 18,
           zIndex: 10,
-          opacity: isVisible ? 1 : 0,
-          willChange: 'transform, opacity',
         }}
       >
         <h3
-          ref={titleRef}
           style={{
             fontFamily: 'var(--font-space-grotesk), sans-serif',
             fontWeight: 500,
@@ -224,7 +181,6 @@ export function ServiceDetailPanel({
           {title}
         </h3>
         <p
-          ref={descRef}
           style={{
             fontFamily: 'Satoshi, var(--font-space-grotesk), sans-serif',
             fontSize: 'clamp(0.95rem, 1.4vw, 19px)',
@@ -237,6 +193,6 @@ export function ServiceDetailPanel({
           {description}
         </p>
       </div>
-    </>
+    </div>
   );
 }

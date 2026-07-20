@@ -64,13 +64,20 @@ export const WORK_CONFIG: ResourceConfig = {
   ],
   fields: [
     { key: 'name', label: 'Project name', type: 'text', required: true },
-    { key: 'slug', label: 'Slug', type: 'text', required: true, helperText: 'Unique, URL-safe — e.g. asr-loyalty-platform' },
+    { key: 'slug', label: 'Slug', type: 'text', required: true, helperText: 'Unique, URL-safe, e.g. asr-loyalty-platform' },
     {
       key: 'logo',
-      label: 'Logo / wordmark',
+      label: 'Logo / wordmark (fallback text)',
       type: 'text',
       required: true,
-      helperText: 'Rendered as styled text on the card. Use "ismora" (exact) to show the Ismora mark instead of text.',
+      helperText:
+        'Shown as styled text if no logo image is uploaded below. Use "ismora" (exact) to show the Ismora mark instead of text.',
+    },
+    {
+      key: 'logoImageUrl',
+      label: 'Logo image (optional)',
+      type: 'image',
+      helperText: 'If uploaded, this image is shown instead of the text wordmark above.',
     },
     { key: 'description', label: 'Description', type: 'textarea', required: true },
     { key: 'industry', label: 'Industry', type: 'text', required: true },
@@ -140,4 +147,21 @@ export const TEAM_CONFIG: ResourceConfig = {
   ],
 };
 
-export const ALL_RESOURCES: ResourceConfig[] = [WORK_CONFIG, SERVICES_CONFIG, TEAM_CONFIG];
+export const SITE_SETTINGS_CONFIG: ResourceConfig = {
+  key: 'site-settings',
+  title: 'Site Settings',
+  singular: 'Site settings',
+  description: 'Contact info and social link shown in the footer.',
+  basePath: '/site-settings',
+  listPath: '/site-settings',
+  singleton: true,
+  columns: [],
+  fields: [
+    { key: 'contactEmail', label: 'Contact email', type: 'text', required: true },
+    { key: 'contactPhone', label: 'Contact phone', type: 'text', required: true },
+    { key: 'socialLabel', label: 'Social platform name', type: 'text', helperText: 'e.g. "LinkedIn", shown as the link label/icon.' },
+    { key: 'socialUrl', label: 'Social URL', type: 'text' },
+  ],
+};
+
+export const ALL_RESOURCES: ResourceConfig[] = [WORK_CONFIG, SERVICES_CONFIG, TEAM_CONFIG, SITE_SETTINGS_CONFIG];

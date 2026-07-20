@@ -8,7 +8,8 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export interface Project {
   name: string;
-  logo: string; // wordmark shown big on the card preview
+  logo: string; // wordmark shown big on the card preview (fallback if no logoImageUrl)
+  logoImageUrl?: string; // real per-project logo image; takes priority over `logo` text when set
   description: string;
   industry: string;
   date: string;
@@ -43,7 +44,7 @@ export const PROJECTS: Project[] = [
   {
     name: 'Project Three',
     logo: 'Project',
-    description: 'Placeholder — pending Figma node 385-777. Replace with the real project details.',
+    description: 'Placeholder: pending Figma node 385-777. Replace with the real project details.',
     industry: 'Oil & Gas',
     date: '2025',
     color: '#2e4a3f',
@@ -53,7 +54,7 @@ export const PROJECTS: Project[] = [
   {
     name: 'Project Four',
     logo: 'Project',
-    description: 'Placeholder — pending Figma node 390-1006. Replace with the real project details.',
+    description: 'Placeholder: pending Figma node 390-1006. Replace with the real project details.',
     industry: 'Public Sector',
     date: '2026',
     color: '#26304a',
@@ -72,7 +73,15 @@ export function OurWorksPanel({
   isVisible: boolean;
 }) {
   const N = projects.length;
-  const step = N > 1 ? 1 / (N - 1) : 1; // card i (i≥1) flips in over [(i-1)·step, i·step]
+  // Cards finish flipping by 93% through the section's scroll range, not
+  // 100% — leaving a small settled dwell buffer before the crossfade into the
+  // next section starts. Without this, the last card's flip only reached
+  // "flat" at the exact same instant the crossfade began, so it visibly cut
+  // away mid-tilt instead of ever coming to rest. (Kept small — a bigger
+  // buffer just added extra dead scroll distance after the cards were
+  // already done.)
+  const SETTLE_BUFFER = 0.93;
+  const step = N > 1 ? SETTLE_BUFFER / (N - 1) : 1; // card i (i≥1) flips in over [(i-1)·step, i·step]
   const revealScope = useReveal<HTMLDivElement>(isVisible, { y: 24, duration: 0.6 });
 
   return (
@@ -180,7 +189,15 @@ function WorkCard({ project }: { project: Project }) {
             background: 'linear-gradient(115deg, rgba(255,255,255,0) 40%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0) 60%)',
           }}
         />
-        {project.logo === 'ismora' ? (
+        {project.logoImageUrl ? (
+          <Image
+            src={project.logoImageUrl}
+            alt={project.name}
+            width={220}
+            height={80}
+            style={{ width: 'clamp(120px,20vw,220px)', height: 'auto', objectFit: 'contain' }}
+          />
+        ) : project.logo === 'ismora' ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <Image
               src="/ismora-logo.svg"

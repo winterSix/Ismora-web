@@ -13,8 +13,10 @@ const clamp = (v: number, min = 0, max = 1) => Math.min(max, Math.max(min, v));
 const SHOW_LOGO = false;
 
 // About paragraphs revealed word-by-word on scroll (grey → white).
+// Leads with the value proposition (not the founding story) per the 2026-07
+// content review — see Ismora_Website_Action_Items.xlsx item 8.
 const P1_REST =
-  'was founded in Lagos in 2026 by Ismail Raji. The company builds software, integrated infrastructure, and connected systems for institutions, founders, and operating teams.'.split(
+  'We build software, integrated infrastructure, and connected systems for institutions, founders, and operating teams.'.split(
     ' '
   );
 const P2 =
@@ -216,7 +218,6 @@ export function AboutPanel({ isVisible, progress, active }: AboutPanelProps) {
                   margin: 0,
                 }}
               >
-                <strong style={{ color: '#ffffff' }}>Ismora Technologies Limited </strong>
                 <RevealWords words={P1_REST} offset={0} total={TOTAL_WORDS} wp={wordProgress} />
               </p>
               <p

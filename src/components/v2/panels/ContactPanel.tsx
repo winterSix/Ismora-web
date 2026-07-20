@@ -31,9 +31,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function ContactPanel({ isVisible }: { isVisible: boolean }) {
+export interface FooterSiteSettings {
+  contactEmail: string;
+  contactPhone: string;
+  socialLabel: string | null;
+  socialUrl: string | null;
+}
+
+interface ContactPanelProps {
+  isVisible: boolean;
+  /** Footer nav labels, in scroll order — injected by IsmoraV2 (only it knows
+   * which sections are currently enabled). */
+  sections?: string[];
+  /** Jumps to the sidebar-index'd section — same callback SidebarNav uses. */
+  onNavigate?: (index: number) => void;
+  siteSettings?: FooterSiteSettings;
+}
+
+export function ContactPanel({ isVisible, sections = [], onNavigate, siteSettings }: ContactPanelProps) {
   const anim = isVisible ? 'animate-fade-slide-up' : '';
   const isMobile = useIsMobile();
+  // Every section except Contact itself (no point linking to where you are).
+  const footerLinks = sections.slice(0, -1);
+
   return (
     <div
       className="contact-content"
@@ -101,7 +121,7 @@ export function ContactPanel({ isVisible }: { isVisible: boolean }) {
         {!isMobile && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
             <div style={{ width: 'clamp(200px,24vw,360px)', height: 'clamp(200px,24vw,360px)' }}>
-              <Object3DViewer shape="diamond" size={360} speed={0.55} />
+              <Object3DViewer shape="diamond" size={360} speed={0.55} active={isVisible} />
             </div>
           </div>
         )}
@@ -112,8 +132,8 @@ export function ContactPanel({ isVisible }: { isVisible: boolean }) {
         className="contact-footer"
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          flexDirection: 'column',
+          gap: 12,
           paddingTop: 14,
           borderTop: '1px solid rgba(255,255,255,0.1)',
           fontFamily: 'Satoshi, var(--font-space-grotesk), sans-serif',
@@ -122,8 +142,52 @@ export function ContactPanel({ isVisible }: { isVisible: boolean }) {
           flexShrink: 0,
         }}
       >
-        <span>© 2026 ismora</span>
-        <span>All Rights belongs to ismora</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+          {/* Section nav */}
+          {footerLinks.length > 0 && (
+            <nav style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px' }}>
+              {footerLinks.map((label, i) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => onNavigate?.(i)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: '#8a8a90',
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#8a8a90')}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          )}
+
+          {/* Contact info + social */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 18px', alignItems: 'center' }}>
+            {siteSettings?.contactEmail && (
+              <a href={`mailto:${siteSettings.contactEmail}`} style={{ color: '#8a8a90' }}>
+                {siteSettings.contactEmail}
+              </a>
+            )}
+            {siteSettings?.contactPhone && <span>{siteSettings.contactPhone}</span>}
+            {siteSettings?.socialUrl && (
+              <a href={siteSettings.socialUrl} target="_blank" rel="noreferrer" style={{ color: '#8a8a90' }}>
+                {siteSettings.socialLabel || 'Social'}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px 16px' }}>
+          <span>© {new Date().getFullYear()} Ismora Technologies Limited. All rights reserved.</span>
+        </div>
       </div>
     </div>
   );
