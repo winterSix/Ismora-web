@@ -514,9 +514,19 @@ export function IsmoraV2({
       <ThemeToggle />
 
       {/* Fixed Sidebar Nav — hidden on the first page (nothing to jump to yet)
-          and shown from the second page through the last. */}
+          and shown from the second page through the last. `position: relative`
+          + an explicit z-index above every section layer's (1..N) is required
+          here: any opacity below 1 creates a new stacking context, and this
+          wrapper's opacity is mid-transition (not settled exactly at 1) far
+          more often than you'd expect on a scroll-driven page — while that's
+          true, the hamburger/sidebar's own high z-index only matters *inside*
+          this wrapper's local context, so without an explicit z-index here
+          the whole nav (hamburger included) silently renders behind the
+          active section instead of above it. */}
       <div
         style={{
+          position: 'relative',
+          zIndex: 200,
           opacity: activeSection === 0 ? 0 : 1,
           pointerEvents: activeSection === 0 ? 'none' : 'auto',
           transition: 'opacity 0.4s ease',

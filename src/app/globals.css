@@ -36,7 +36,11 @@
 
 * { box-sizing: border-box; }
 
-html { scrollbar-color: #2a2a2a #0a0a0a; scrollbar-width: thin; overflow-x: hidden; }
+/* overscroll-behavior: none — the whole page is one giant scroll-driven
+   spacer with position:fixed content layers; rubber-band bounce at the top/
+   bottom edge would stretch past that spacer without moving any content,
+   which reads as a glitch rather than a real boundary. */
+html { scrollbar-color: #2a2a2a #0a0a0a; scrollbar-width: thin; overflow-x: hidden; overscroll-behavior-y: none; }
 .snap-container { scrollbar-width: thin; scrollbar-color: #2a2a2a transparent; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #0a0a0a; }
@@ -510,6 +514,11 @@ button { font: inherit; cursor: pointer; }
     -webkit-backdrop-filter: blur(6px);
     opacity: 0;
     pointer-events: none;
+    /* Blocks touch-driven pan/scroll from reaching the page behind the
+       drawer, without touching window.scrollY the way a body position:fixed
+       lock would (see SidebarNav's scroll-lock effect for why that matters
+       here). */
+    touch-action: none;
     transition: opacity 0.35s ease;
   }
   .nav-backdrop-open { opacity: 1; pointer-events: auto; }
@@ -664,11 +673,15 @@ button { font: inherit; cursor: pointer; }
   .ourworks-heading { justify-content: center; }
 
   .work-preview { flex: 0 0 auto; min-height: 0; height: clamp(90px, 30vw, 140px); }
+  /* No nested overflow-y here — same reason as .team-content/.contact-content
+     above (a scrollable div nested inside this scroll-jacked page fights the
+     window scroll and traps touch gestures that start over it). Measured:
+     real card content comfortably fits the available height without it, even
+     on small phones (iPhone SE-class, 375×667). */
   .work-meta {
     grid-template-columns: 1fr;
     gap: 14px;
     flex: 1 1 auto;
-    overflow-y: auto;
     padding-bottom: 4px;
   }
 }

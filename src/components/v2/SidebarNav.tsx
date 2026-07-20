@@ -37,8 +37,14 @@ export function SidebarNav({ activeSection, onNavigate, sections = DEFAULT_SECTI
   }, [activeSection]);
 
   // Lock background scroll while the drawer is open — this site drives its
-  // whole layout off window scroll, so a stray wheel/touch behind the menu
+  // whole layout off window.scrollY, so a stray wheel/touch behind the menu
   // would otherwise jump sections while the user is just browsing the list.
+  // Deliberately NOT the "pin body to position:fixed" trick some sites use
+  // for the iOS overflow:hidden quirk: that makes window.scrollY read 0 while
+  // locked, which this page's own scroll-driven section tracking picks up as
+  // "back at the top", fading the whole nav (including the open drawer) to
+  // invisible. touch-action:none on the backdrop blocks touch scroll/pan
+  // without touching scrollY at all.
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
