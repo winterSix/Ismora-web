@@ -242,7 +242,14 @@ export function IsmoraV2({
     [projects, services, members, siteSettings, visibility]
   );
 
-  const sidebarLabels = useMemo(() => enabledGroups.map((g) => g.label), [enabledGroups]);
+  // Hero has no sidebar entry — it's the landing view, not a navigable
+  // destination, and there's nothing before it to jump back to that isn't
+  // already reachable by scrolling up. Sidebar-facing structures are built
+  // from the non-hero groups only; hero's own slides map to sidebar index -1.
+  const sidebarLabels = useMemo(
+    () => enabledGroups.filter((g) => g.key !== 'hero').map((g) => g.label),
+    [enabledGroups]
+  );
 
   // Metadata only (key/reveal/zoom) — this is what scroll-math needs. Kept as
   // its own memo so computeLayout's dependency is stable content, not the
@@ -252,23 +259,35 @@ export function IsmoraV2({
     [enabledGroups]
   );
 
-  // Which enabled-group ordinal (sidebar index) each flat slide index belongs
-  // to, and the first flat index of each group (a sidebar click's jump target).
-  const { sidebarIndexForSlide, groupStartIndex } = useMemo(() => {
+  // Which sidebar ordinal each flat slide index belongs to (-1 for hero's own
+  // slides, which have no sidebar entry); the first flat index of each
+  // sidebar-visible group (a sidebar click's jump target); and the first flat
+  // index of each group in enabledGroups' own order (hero included — this is
+  // what the render loop below needs to place every group's slides, not just
+  // the sidebar-visible ones).
+  const { sidebarIndexForSlide, groupStartIndex, groupFlatStart } = useMemo(() => {
     const forSlide: number[] = [];
     const starts: number[] = [];
+    const flatStarts: number[] = [];
     let flatIndex = 0;
-    enabledGroups.forEach((g, groupIndex) => {
-      starts.push(flatIndex);
+    let sidebarIndex = -1;
+    enabledGroups.forEach((g) => {
+      const isHero = g.key === 'hero';
+      flatStarts.push(flatIndex);
+      if (!isHero) {
+        sidebarIndex += 1;
+        starts.push(flatIndex);
+      }
       g.slides.forEach(() => {
-        forSlide.push(groupIndex);
+        forSlide.push(isHero ? -1 : sidebarIndex);
         flatIndex += 1;
       });
     });
-    return { sidebarIndexForSlide: forSlide, groupStartIndex: starts };
+    return { sidebarIndexForSlide: forSlide, groupStartIndex: starts, groupFlatStart: flatStarts };
   }, [enabledGroups]);
 
-  const [activeSection, setActiveSection] = useState(0);
+  // -1 = on Hero, which has no sidebar entry (see sidebarIndexForSlide below).
+  const [activeSection, setActiveSection] = useState(-1);
   const [docH, setDocH] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
   const [op, setOp] = useState<number[]>(() => SECTIONS.map((_, i) => (i === 0 ? 1 : 0)));
@@ -346,7 +365,7 @@ export function IsmoraV2({
       setOp(eased);
       setProg(SECTIONS.map((_, i) => clamp((y - starts[i]) / reveals[i])));
       setVisited((prev) => (prev.has(cur) ? prev : new Set(prev).add(cur)));
-      setActiveSection(sidebarIndexForSlide[cur] ?? 0);
+      setActiveSection(sidebarIndexForSlide[cur] ?? -1);
       setAtEnd(y >= maxScroll - 8);
       return fadeDone;
     };
@@ -536,8 +555,8 @@ export function IsmoraV2({
         style={{
           position: 'relative',
           zIndex: 200,
-          opacity: activeSection === 0 ? 0 : 1,
-          pointerEvents: activeSection === 0 ? 'none' : 'auto',
+          opacity: activeSection === -1 ? 0 : 1,
+          pointerEvents: activeSection === -1 ? 'none' : 'auto',
           transition: 'opacity 0.4s ease',
         }}
       >
@@ -552,7 +571,7 @@ export function IsmoraV2({
           contribute no slides at all, so there's no dead scroll range. */}
       {enabledGroups.flatMap((group, groupIndex) =>
         group.slides.map((slide, slideIndexInGroup) => {
-          const flatIndex = groupStartIndex[groupIndex] + slideIndexInGroup;
+          const flatIndex = groupFlatStart[groupIndex] + slideIndexInGroup;
           const ctx: RenderCtx = {
             i: flatIndex,
             prog: prog[flatIndex] ?? 0,
@@ -594,7 +613,7 @@ export function IsmoraV2({
         aria-hidden
         className="scroll-hint"
         style={{
-          opacity: (activeSection === 0 || activeSection === sidebarLabels.length - 1) && !atEnd ? 1 : 0,
+          opacity: (activeSection === -1 || activeSection === sidebarLabels.length - 1) && !atEnd ? 1 : 0,
           transition: 'opacity 0.5s ease',
         }}
       >
